@@ -1,8 +1,8 @@
 /** Pure helpers the components used to declare inline. Nothing here touches
  *  React or CSS: a component maps the returned token to its own styles. */
 
-import { WorkflowStage } from '../types/admissions'
-import { NodeKind, type Flow, type FlowNode } from '../types/flow'
+import { Operator, WorkflowStage } from '../types/admissions'
+import { NodeKind, type Flow, type FlowNode, type PathCondition } from '../types/flow'
 
 export type PathTone = 'yes' | 'no' | 'other'
 
@@ -12,6 +12,21 @@ export function pathTone(label: string | undefined): PathTone {
   if (label === 'Yes') return 'yes'
   if (label === 'No') return 'no'
   return 'other'
+}
+
+/** `is empty` and `is not empty` need no value, so a path using one is
+ *  configured even though its value is blank. */
+export function isPathConfigured(condition: PathCondition | undefined): boolean {
+  if (!condition) return false
+  if (condition.operator === Operator.IsEmpty || condition.operator === Operator.IsNotEmpty) {
+    return true
+  }
+  return condition.value !== ''
+}
+
+/** Whether this path is the catch-all: no condition of its own to match. */
+export function isFallbackPath(condition: PathCondition | undefined): boolean {
+  return !isPathConfigured(condition)
 }
 
 /** The heading shown above the node picker. Adding to a node that already has

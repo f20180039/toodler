@@ -1,6 +1,6 @@
 import { kindMeta } from '../../utils/nodeMeta'
 import { summarise } from '../../utils/nodeSummary'
-import { formatOptionList, parseOptionList } from '../../utils/nodeView'
+import { formatOptionList, isFallbackPath, parseOptionList } from '../../utils/nodeView'
 import {
   ACADEMIC_YEAR_OPTIONS,
   ADMISSION_FIELD_OPTIONS,
@@ -24,7 +24,13 @@ import {
   TRIGGER_EVENT_OPTIONS,
   WAIT_EVENT_OPTIONS,
 } from '../../constants/admissions'
-import { AllocateMethod, AllocateTarget, Operator, type House } from '../../types/admissions'
+import {
+  AllocateMethod,
+  AllocateTarget,
+  Operator,
+  type AdmissionField,
+  type House,
+} from '../../types/admissions'
 import {
   DelayMode,
   NodeKind,
@@ -56,6 +62,7 @@ interface ConfigPanelProps {
   onParams: (patch: Partial<AnyParams>) => void
   onDelete: () => void
   onAddPath: () => void
+  onBranchField: (field: AdmissionField) => void
   onUpdatePath: (index: number, patch: PathPatch) => void
   onRemovePath: (index: number) => void
 }
@@ -66,6 +73,7 @@ export function ConfigPanel({
   onParams,
   onDelete,
   onAddPath,
+  onBranchField,
   onUpdatePath,
   onRemovePath,
 }: ConfigPanelProps) {
@@ -366,11 +374,14 @@ export function ConfigPanel({
 
         {node.kind === NodeKind.Branch && (
           <>
-            <Field label="Check which field" hint="Every path tests this one field">
+            <Field
+              label="Check which field"
+              hint="Every path tests this one field. Changing it clears the path values."
+            >
               <Select
                 value={node.params.field}
                 options={ADMISSION_FIELD_OPTIONS}
-                onValueChange={(field) => onParams({ field })}
+                onValueChange={onBranchField}
               />
             </Field>
 
@@ -415,7 +426,7 @@ export function ConfigPanel({
                         onValueChange={(value) => onUpdatePath(index, { value })}
                       />
                     </InlineFields>
-                    {!child.pathCondition?.value && (
+                    {isFallbackPath(child.pathCondition) && (
                       <p className={styles.pathNote}>
                         {isLast
                           ? 'No value: this is the fallback path, taken when nothing else matches.'

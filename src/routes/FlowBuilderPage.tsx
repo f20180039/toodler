@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConfigPanel, FlowCanvas, NodePalette } from '../components/flow'
 import {
   Button,
@@ -12,7 +12,7 @@ import {
 } from '../components/ui'
 import { flows } from '../data/flows'
 import { useFlowLocation } from '../hooks/useFlowLocation'
-import { WorkflowStage } from '../types/admissions'
+import { WorkflowStage, type AdmissionField } from '../types/admissions'
 import { nodeWarning } from '../utils/nodeSummary'
 import {
   addChild,
@@ -24,6 +24,7 @@ import {
   insertBefore,
   removePath,
   renameNode,
+  setBranchField,
   updateParams,
   updatePath,
 } from '../utils/flowTree'
@@ -42,6 +43,10 @@ const DEFAULT_FLOW_ID = 'application'
 
 export function FlowBuilderPage() {
   const [trees, setTrees] = useState<Trees>(seedTrees)
+  /* The step validator is called from the URL hook, which must not re-subscribe
+     on every edit - so it reads the trees through a ref. */
+  const treesRef = useRef(trees)
+  treesRef.current = trees
   /* Snapshots of the whole map, so undo works across stages too. */
   const [past, setPast] = useState<Trees[]>([])
   const [future, setFuture] = useState<Trees[]>([])
@@ -52,7 +57,14 @@ export function FlowBuilderPage() {
     stepId: selectedId,
     openFlow: openFlowAt,
     selectStep: setSelectedId,
-  } = useFlowLocation({ flows, fallbackFlowId: DEFAULT_FLOW_ID })
+  } = useFlowLocation({
+    flows,
+    fallbackFlowId: DEFAULT_FLOW_ID,
+    isValidStep: (candidateFlowId, candidateStepId) => {
+      const tree = treesRef.current[candidateFlowId]
+      return Boolean(tree && findNode(tree, candidateStepId))
+    },
+  })
 
   const flow = flows.find((candidate) => candidate.id === flowId)!
   /* Stage order comes from the WorkflowStage enum, not from the order the flows
@@ -150,6 +162,10 @@ export function FlowBuilderPage() {
     const { tree, addedId } = addPath(root, selected.id)
     commit(tree)
     setSelectedId(addedId)
+  }
+
+  function handleBranchField(field: AdmissionField) {
+    commit(setBranchField(root, selected.id, field))
   }
 
   function handleUpdatePath(index: number, patch: PathPatch) {
@@ -274,6 +290,7 @@ export function FlowBuilderPage() {
           onParams={handleParams}
           onDelete={() => handleDelete(selected.id)}
           onAddPath={handleAddPath}
+          onBranchField={handleBranchField}
           onUpdatePath={handleUpdatePath}
           onRemovePath={handleRemovePath}
         />

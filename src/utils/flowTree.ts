@@ -257,6 +257,22 @@ export function addPath(root: FlowNode, branchId: string): { tree: FlowNode; add
   return { tree, addedId: added.id }
 }
 
+/** Changing which field a branch tests invalidates every path value, since
+ *  they came from the old field's vocabulary. One update, so it is one undo. */
+export function setBranchField(root: FlowNode, branchId: string, field: AdmissionField): FlowNode {
+  return replace(root, branchId, (node) => ({
+    ...node,
+    params: { ...node.params, field },
+    children: node.children.map((child) => ({
+      ...child,
+      pathCondition: {
+        operator: child.pathCondition?.operator ?? Operator.Equals,
+        value: '' as const,
+      },
+    })),
+  }) as FlowNode)
+}
+
 export function updatePath(
   root: FlowNode,
   branchId: string,

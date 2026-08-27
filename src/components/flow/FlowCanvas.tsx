@@ -7,10 +7,19 @@ import {
   canAddAfter,
   canInsertAbove,
   pathTone,
+  type PathTone,
 } from '../../utils/nodeView'
 import { Icon, IconButton, Menu, MenuItem, MenuSection } from '../ui'
 import { NodeGlyph } from './NodeGlyph'
 import styles from './FlowCanvas.module.css'
+
+/** The util returns a semantic tone; the stylesheet is the component's own
+ *  business. Looking up styles[tone] directly silently yielded undefined. */
+const TONE_CLASS: Record<PathTone, string> = {
+  yes: styles.pathYes,
+  no: styles.pathNo,
+  other: styles.pathOther,
+}
 
 interface CanvasHandlers {
   selectedId: string
@@ -82,7 +91,7 @@ function Subtree({
                   {child.pathLabel && (
                     <span className={styles.pathTag}>
                       <span
-                        className={[styles.pathLabel, styles[pathTone(child.pathLabel)]].join(' ')}
+                        className={[styles.pathLabel, TONE_CLASS[pathTone(child.pathLabel)]].join(' ')}
                       >
                         {child.pathLabel}
                       </span>

@@ -18,12 +18,23 @@ export function parseFlowLocation(search: string): FlowLocation {
   }
 }
 
-/** `?flow=transfer&step=t-branch-seat`. The step is omitted when it is the
- *  trigger, so the common link stays short. */
-export function formatFlowLocation({ flowId, stepId }: FlowLocation): string {
-  const params = new URLSearchParams()
+/** `?flow=transfer&step=t-branch-seat`.
+ *
+ *  Seeded from the search string already in the address bar, so unrelated
+ *  parameters (a campaign tag, anything a host appends) survive a navigation
+ *  instead of being rebuilt away. */
+export function formatFlowLocation(
+  { flowId, stepId }: FlowLocation,
+  existingSearch = '',
+): string {
+  const params = new URLSearchParams(existingSearch)
+
   if (flowId) params.set(FLOW_PARAM, flowId)
+  else params.delete(FLOW_PARAM)
+
   if (stepId) params.set(STEP_PARAM, stepId)
+  else params.delete(STEP_PARAM)
+
   const query = params.toString()
   return query ? `?${query}` : ''
 }

@@ -1,5 +1,6 @@
 import { AllocateMethod } from '../types/admissions'
 import { DelayMode, NodeKind, type FlowNode, type Retry } from '../types/flow'
+import { isPathConfigured } from './nodeView'
 
 /** The line printed under the title on the node itself, so the diagram can be
  *  read without opening anything — never the word "Configured". */
@@ -73,7 +74,8 @@ export function nodeWarning(node: FlowNode): string | undefined {
       return undefined
 
     case NodeKind.Branch: {
-      const configured = node.children.filter((child) => child.pathCondition?.value).length
+      const configured = node.children.filter((child) => isPathConfigured(child.pathCondition))
+        .length
       /* One path may legitimately be the fallback; two or more unset means the
          routing is ambiguous. */
       return node.children.length - configured > 1 ? 'Set the path conditions' : undefined
