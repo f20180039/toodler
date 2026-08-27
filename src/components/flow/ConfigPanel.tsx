@@ -1,4 +1,26 @@
 import { kindMeta, summarise } from '../../lib/flowMeta'
+import {
+  ACADEMIC_YEAR_OPTIONS,
+  ADMISSION_FIELD_OPTIONS,
+  ALLOCATE_METHOD_OPTIONS,
+  ALLOCATE_TARGET_OPTIONS,
+  ASSIGNEE_OPTIONS,
+  DEFAULT_HOUSES,
+  DEFAULT_SECTIONS,
+  DELAY_UNIT_OPTIONS,
+  fieldValues,
+  GRADE_OPTIONS,
+  HOUSE_COLOURS,
+  NOTIFY_CHANNEL_OPTIONS,
+  NOTIFY_PRIORITY_OPTIONS,
+  OPERATOR_OPTIONS,
+  RECIPIENT_OPTIONS,
+  SENDER_OPTIONS,
+  TASK_PRIORITY_OPTIONS,
+  TRIGGER_EVENT_OPTIONS,
+  WAIT_EVENT_OPTIONS,
+} from '../../constants/admissions'
+import { AllocateTarget, type House } from '../../types/admissions'
 import type {
   AnyParams,
   DelayMode,
@@ -21,126 +43,6 @@ import {
   TextInput,
 } from '../ui'
 import styles from './ConfigPanel.module.css'
-
-const TRIGGER_EVENTS = [
-  'Enquiry submitted',
-  'Application submitted',
-  'Documents submitted',
-  'Interview scheduled',
-  'Interview completed',
-  'Offer accepted',
-  'Applicant enrolled',
-  'Payment received',
-  'Transfer request raised',
-] as const
-
-/** Pre-primary through to school-leaving, in journey order - a school picks a
- *  grade far more often than it types one. */
-const GRADES = [
-  'All grades',
-  'Nursery',
-  'LKG',
-  'UKG',
-  'Grade 1',
-  'Grade 2',
-  'Grade 3',
-  'Grade 4',
-  'Grade 5',
-  'Grade 6',
-  'Grade 7',
-  'Grade 8',
-  'Grade 9',
-  'Grade 10',
-  'Grade 11',
-  'Grade 12',
-] as const
-const YEARS = ['2026–27', '2027–28'] as const
-
-const RECIPIENTS = [
-  'Parent / Guardian',
-  'Applicant',
-  'Admissions officer',
-  'Assigned counsellor',
-  'Class teacher',
-  'Finance team',
-  'Admissions team',
-  'Admissions head',
-  'Interview panel',
-  'Destination coordinator',
-  'House captain',
-] as const
-
-const SENDERS = ['Admissions team', 'Assigned counsellor', 'Principal', 'Finance team'] as const
-const UNITS = ['minutes', 'hours', 'days'] as const
-const WAIT_EVENTS = [
-  'Documents submitted',
-  'Payment received',
-  'Interview completed',
-  'Application submitted',
-] as const
-const ASSIGNEES = [
-  'Admissions officer',
-  'Assigned counsellor',
-  'Admissions team',
-  'Finance team',
-  'Destination admissions officer',
-  'Records team',
-  'Interview panel',
-  'Principal',
-] as const
-const PRIORITIES = ['Low', 'Medium', 'High'] as const
-const CHANNELS = ['In-app', 'In-app + email'] as const
-const NOTIFY_PRIORITIES = ['Normal', 'Urgent'] as const
-const CONDITION_FIELDS = [
-  'Document status',
-  'Payment status',
-  'Application status',
-  'Interview status',
-  'Decision',
-  'Dues status',
-  'Seat availability',
-  'Transfer status',
-  'Offer status',
-  'Enrolment status',
-  'House',
-] as const
-const OPERATORS = ['=', 'is not', 'is empty', 'is not empty'] as const
-
-/** The school's own stage vocabulary. Picking a field narrows the values,
- *  which is the whole argument for admissions-native fields over generic
- *  CRM properties - the options can be right by default. */
-const STATUS_VALUES: Record<string, readonly string[]> = {
-  'Application status': [
-    'Submitted',
-    'Under review',
-    'Shortlisted',
-    'Needs a second look',
-    'Waitlisted',
-    'Rejected',
-  ],
-  'Document status': ['Complete', 'Incomplete', 'Rejected'],
-  'Interview status': ['Scheduled', 'Completed', 'No show', 'Rescheduled'],
-  'Payment status': ['Pending', 'Partial', 'Paid'],
-  Decision: ['Offered', 'Waitlisted', 'Rejected'],
-  'Dues status': ['Cleared', 'Pending'],
-  'Seat availability': ['Available', 'Waitlist', 'No seat'],
-  'Transfer status': ['Requested', 'Approved', 'Waitlisted', 'Declined', 'Completed'],
-  'Offer status': ['Accepted', 'Declined', 'Expired'],
-  'Enrolment status': ['Pending', 'Confirmed', 'Withdrawn'],
-  House: ['Red', 'Yellow', 'Blue', 'Green'],
-}
-
-const ALLOCATE_TARGETS = ['House', 'Class & section'] as const
-const ALLOCATE_METHODS = ['Balance across options', 'Match a sibling', 'Pick one option'] as const
-
-/** The school's house colours, so the options read as houses rather than as
- *  four arbitrary words. Not design tokens - they belong to the school. */
-const HOUSE_COLOURS: Record<string, string> = {
-  Red: '#dc2626',
-  Yellow: '#eab308',
-  Blue: '#2563eb',
-  Green: '#16a34a',
-}
 
 interface ConfigPanelProps {
   node: FlowNode
@@ -183,21 +85,21 @@ export function ConfigPanel({
             <Field label="Starts when" hint="A flow has exactly one trigger">
               <Select
                 value={node.params.event}
-                options={TRIGGER_EVENTS}
+                options={TRIGGER_EVENT_OPTIONS}
                 onValueChange={(event) => onParams({ event })}
               />
             </Field>
             <Field label="Grade">
               <Select
                 value={node.params.grade}
-                options={GRADES}
+                options={GRADE_OPTIONS}
                 onValueChange={(grade) => onParams({ grade })}
               />
             </Field>
             <Field label="Academic year">
               <Select
                 value={node.params.academicYear}
-                options={YEARS}
+                options={ACADEMIC_YEAR_OPTIONS}
                 onValueChange={(academicYear) => onParams({ academicYear })}
               />
             </Field>
@@ -209,7 +111,7 @@ export function ConfigPanel({
             <Field label="To" hint="A role, resolved per applicant — not a fixed address">
               <Select
                 value={node.params.recipient}
-                options={RECIPIENTS}
+                options={RECIPIENT_OPTIONS}
                 onValueChange={(recipient) => onParams({ recipient })}
               />
             </Field>
@@ -223,7 +125,7 @@ export function ConfigPanel({
             <Field label="From">
               <Select
                 value={node.params.sender}
-                options={SENDERS}
+                options={SENDER_OPTIONS}
                 onValueChange={(sender) => onParams({ sender })}
               />
             </Field>
@@ -260,7 +162,7 @@ export function ConfigPanel({
                     />
                     <Select
                       value={node.params.unit}
-                      options={UNITS}
+                      options={DELAY_UNIT_OPTIONS}
                       onValueChange={(unit) => onParams({ unit })}
                     />
                   </InlineFields>
@@ -279,7 +181,7 @@ export function ConfigPanel({
                 <Field label="Wait until" hint="Stops waiting the moment this happens">
                   <Select
                     value={node.params.event}
-                    options={WAIT_EVENTS}
+                    options={WAIT_EVENT_OPTIONS}
                     onValueChange={(event) => onParams({ event })}
                   />
                 </Field>
@@ -312,14 +214,14 @@ export function ConfigPanel({
             <Field label="Assign to">
               <Select
                 value={node.params.assignee}
-                options={ASSIGNEES}
+                options={ASSIGNEE_OPTIONS}
                 onValueChange={(assignee) => onParams({ assignee })}
               />
             </Field>
             <Field label="Priority">
               <Select
                 value={node.params.priority}
-                options={PRIORITIES}
+                options={TASK_PRIORITY_OPTIONS}
                 onValueChange={(priority) => onParams({ priority })}
               />
             </Field>
@@ -342,21 +244,21 @@ export function ConfigPanel({
             <Field label="Notify">
               <Select
                 value={node.params.recipient}
-                options={RECIPIENTS}
+                options={RECIPIENT_OPTIONS}
                 onValueChange={(recipient) => onParams({ recipient })}
               />
             </Field>
             <Field label="Channel">
               <Select
                 value={node.params.channel}
-                options={CHANNELS}
+                options={NOTIFY_CHANNEL_OPTIONS}
                 onValueChange={(channel) => onParams({ channel })}
               />
             </Field>
             <Field label="Priority">
               <Select
                 value={node.params.priority}
-                options={NOTIFY_PRIORITIES}
+                options={NOTIFY_PRIORITY_OPTIONS}
                 onValueChange={(priority) => onParams({ priority })}
               />
             </Field>
@@ -373,17 +275,17 @@ export function ConfigPanel({
             <Field label="Field">
               <Select
                 value={node.params.field}
-                options={CONDITION_FIELDS}
+                options={ADMISSION_FIELD_OPTIONS}
                 onValueChange={(field) =>
                   /* Keep the value valid for the field that was just chosen. */
-                  onParams({ field, value: STATUS_VALUES[field][0] })
+                  onParams({ field, value: fieldValues(field)[0] })
                 }
               />
             </Field>
             <Field label="New value" hint="Set the moment this step runs">
               <Select
                 value={node.params.value}
-                options={STATUS_VALUES[node.params.field] ?? []}
+                options={fieldValues(node.params.field)}
                 onValueChange={(value) => onParams({ value })}
               />
             </Field>
@@ -395,15 +297,14 @@ export function ConfigPanel({
             <Field label="Allocate">
               <Select
                 value={node.params.target}
-                options={ALLOCATE_TARGETS}
+                options={ALLOCATE_TARGET_OPTIONS}
                 onValueChange={(target) =>
                   onParams({
                     target,
                     /* Switching target switches the pool it draws from. */
-                    options:
-                      target === 'House'
-                        ? ['Red', 'Yellow', 'Blue', 'Green']
-                        : ['A', 'B', 'C'],
+                    options: [
+                      ...(target === AllocateTarget.House ? DEFAULT_HOUSES : DEFAULT_SECTIONS),
+                    ],
                     value: '',
                   })
                 }
@@ -413,13 +314,13 @@ export function ConfigPanel({
             <Field label="How" hint="Balancing keeps the houses and sections even in size">
               <Select
                 value={node.params.method}
-                options={ALLOCATE_METHODS}
+                options={ALLOCATE_METHOD_OPTIONS}
                 onValueChange={(method) => onParams({ method })}
               />
             </Field>
 
             <Field
-              label={node.params.target === 'House' ? 'Houses' : 'Sections'}
+              label={node.params.target === AllocateTarget.House ? 'Houses' : 'Sections'}
               hint="Comma separated"
             >
               <TextInput
@@ -438,10 +339,10 @@ export function ConfigPanel({
             <div className={styles.options}>
               {node.params.options.map((option) => (
                 <span className={styles.option} key={option}>
-                  {node.params.target === 'House' && (
+                  {node.params.target === AllocateTarget.House && (
                     <span
                       className={styles.dot}
-                      style={{ background: HOUSE_COLOURS[option] ?? 'var(--c-neutral-400)' }}
+                      style={{ background: HOUSE_COLOURS[option as House] ?? 'var(--c-neutral-400)' }}
                     />
                   )}
                   {option}
@@ -473,7 +374,7 @@ export function ConfigPanel({
             <Field label="Check which field" hint="Every path tests this one field">
               <Select
                 value={node.params.field}
-                options={CONDITION_FIELDS}
+                options={ADMISSION_FIELD_OPTIONS}
                 onValueChange={(field) => onParams({ field })}
               />
             </Field>
@@ -487,7 +388,7 @@ export function ConfigPanel({
               }
             >
               {node.children.map((child, index) => {
-                const values = STATUS_VALUES[node.params.field] ?? []
+                const values = fieldValues(node.params.field)
                 const isLast = index === node.children.length - 1
                 return (
                   <div className={styles.path} key={child.id}>
@@ -509,7 +410,7 @@ export function ConfigPanel({
                     <InlineFields>
                       <Select
                         value={child.pathCondition?.operator ?? '='}
-                        options={OPERATORS}
+                        options={OPERATOR_OPTIONS}
                         onValueChange={(operator) => onUpdatePath(index, { operator })}
                       />
                       {values.length > 0 ? (
