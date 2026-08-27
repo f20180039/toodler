@@ -1,0 +1,41 @@
+.glyph {
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  flex: none;
+}
+
+.sm {
+  width: 26px;
+  height: 26px;
+}
+
+.md {
+  width: 32px;
+  height: 32px;
+}
+
+.trigger {
+  background: var(--c-trigger-50);
+  border-color: var(--c-trigger-200);
+  color: var(--c-trigger-600);
+}
+
+.action {
+  background: var(--c-action-50);
+  border-color: var(--c-action-200);
+  color: var(--c-action-600);
+}
+
+.logic {
+  background: var(--c-logic-50);
+  border-color: var(--c-logic-200);
+  color: var(--c-logic-600);
+}
+
+.delay {
+  background: var(--c-delay-50);
+  border-color: var(--c-delay-200);
+  color: var(--c-delay-600);
+}

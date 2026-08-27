@@ -1,0 +1,97 @@
+https://toddle-admissions-workflow-task.netlify.app/
+
+Admissions · marketing · enrolment
+Build the Workflow Builder, round by round.
+This is a continuous assignment. You will move from product research to solution design and then to a working MVP.
+
+How this task works
+You will move to the next round only after clearing the previous round.
+
+Submit each deliverable by end of day, one day before the interview. For a Tuesday interview, submit it before Monday ends.
+
+What we are building
+Use the example workflows on this page as a starting point.
+The admission journey
+A typical admission journey moves through these stages. Across the journey, schools communicate with families, follow up on pending tasks and guide them to the next step.
+
+Enquiry
+Application
+Review
+Decision
+Enrolment
+Payment
+The Workflow Builder
+The Workflow Builder helps schools create workflows across admissions, marketing and enrolment. For this assignment, candidates only need to build the workflow creation experience; workflow execution is outside the scope.
+
+Basic workflow nodes
+These nodes are used in the examples below.
+Trigger
+Starts the workflow when something happens.
+
+Send email
+Sends a message to a family or the school team.
+
+Delay
+Waits before moving to the next step.
+
+Branch
+Continues the workflow only when a condition matches.
+
+Three basic workflow examples
+They explain the product. They are not the final scope.
+Application acknowledgement
+Confirm that the school has received an application.
+
+Trigger
+Application form submitted
+Email
+Send thank-you email to parent
+Email
+Notify admissions team
+Enquiry conversion campaign
+Encourage an enquiry to become an application.
+
+Trigger
+Enquiry form submitted
+Email
+Send school introduction email
+Delay
+Wait 3 days
+Email
+Send application reminder
+Enrolment payment reminder
+Follow up when payment is still pending after enrolment.
+
+Trigger
+Applicant enrolled
+Email
+Send payment instruction email
+Delay
+Wait 5 days
+Branch
+Payment is pending
+Email
+Send payment reminder
+Interview journey
+Each round gives input to the next one.
+ROUND
+2
+Product research and product design
+Explore common admission workflow use cases, research relevant products and build a basic Workflow Builder prototype.
+
+Your task
+Draw 4–5 common workflows to automate.
+Identify the nodes needed for those workflows.
+Define the configuration a user needs for every node.
+Research HubSpot, ActiveCampaign, Mailchimp and other relevant products.
+Submit
+Prototype
+
+It should show workflows, nodes and node configurations.
+
+Competitor research
+
+List the functionality we should provide.
+
+In the interview
+We will deep dive into how you understood the admission use cases, converted them into workflows, nodes and configurations, and used product research to define the scope. We will then finalise the scope and lock the functionalities for the next round.
