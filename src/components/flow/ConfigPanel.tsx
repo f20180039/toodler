@@ -1,4 +1,6 @@
-import { kindMeta, summarise } from '../../lib/flowMeta'
+import { kindMeta } from '../../utils/nodeMeta'
+import { summarise } from '../../utils/nodeSummary'
+import { formatOptionList, parseOptionList } from '../../utils/nodeView'
 import {
   ACADEMIC_YEAR_OPTIONS,
   ADMISSION_FIELD_OPTIONS,
@@ -7,7 +9,9 @@ import {
   ASSIGNEE_OPTIONS,
   DEFAULT_HOUSES,
   DEFAULT_SECTIONS,
+  DELAY_MODE_SEGMENTS,
   DELAY_UNIT_OPTIONS,
+  fieldValueOptionsWithBlank,
   fieldValues,
   GRADE_OPTIONS,
   HOUSE_COLOURS,
@@ -20,14 +24,16 @@ import {
   TRIGGER_EVENT_OPTIONS,
   WAIT_EVENT_OPTIONS,
 } from '../../constants/admissions'
-import { AllocateTarget, type House } from '../../types/admissions'
-import type {
-  AnyParams,
+import { AllocateMethod, AllocateTarget, Operator, type House } from '../../types/admissions'
+import {
   DelayMode,
-  FlowNode,
-  NotifyParams,
-  Retry,
-  EmailParams,
+  NodeKind,
+  type AnyParams,
+  type EmailParams,
+  type FlowNode,
+  type NotifyParams,
+  type PathPatch,
+  type Retry,
 } from '../../types/flow'
 import {
   Button,
@@ -36,12 +42,12 @@ import {
   Field,
   FieldGroup,
   InlineFields,
-  NodeGlyph,
   NumberInput,
   SegmentedControl,
   Select,
   TextInput,
 } from '../ui'
+import { NodeGlyph } from './NodeGlyph'
 import styles from './ConfigPanel.module.css'
 
 interface ConfigPanelProps {
@@ -50,7 +56,7 @@ interface ConfigPanelProps {
   onParams: (patch: Partial<AnyParams>) => void
   onDelete: () => void
   onAddPath: () => void
-  onUpdatePath: (index: number, patch: { label?: string; operator?: string; value?: string }) => void
+  onUpdatePath: (index: number, patch: PathPatch) => void
   onRemovePath: (index: number) => void
 }
 
@@ -66,7 +72,7 @@ export function ConfigPanel({
   return (
     <aside className={styles.panel} aria-label="Step configuration">
       <header className={styles.header}>
-        <NodeGlyph type={glyphType(node)} />
+        <NodeGlyph kind={node.kind} />
         <div>
           <div className={styles.kind}>{kindMeta[node.kind].label}</div>
           <div className={styles.summary}>{summarise(node)}</div>
@@ -74,13 +80,13 @@ export function ConfigPanel({
       </header>
 
       <div className={styles.body}>
-        {node.kind !== 'end' && (
+        {node.kind !== NodeKind.End && (
           <Field label="Step name" hint="Shown on the node in the diagram">
             <TextInput value={node.title} onValueChange={onRename} />
           </Field>
         )}
 
-        {node.kind === 'trigger' && (
+        {node.kind === NodeKind.Trigger && (
           <>
             <Field label="Starts when" hint="A flow has exactly one trigger">
               <Select
@@ -106,7 +112,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'email' && (
+        {node.kind === NodeKind.Email && (
           <>
             <Field label="To" hint="A role, resolved per applicant — not a fixed address">
               <Select
@@ -137,22 +143,18 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'delay' && (
+        {node.kind === NodeKind.Delay && (
           <>
             <Field label="Wait for">
               <SegmentedControl<DelayMode>
                 label="Delay type"
                 value={node.params.mode}
-                segments={[
-                  { value: 'duration', label: 'A duration' },
-                  { value: 'until-event', label: 'An event' },
-                  { value: 'until-date', label: 'A date' },
-                ]}
+                segments={DELAY_MODE_SEGMENTS}
                 onChange={(mode) => onParams({ mode })}
               />
             </Field>
 
-            {node.params.mode === 'duration' && (
+            {node.params.mode === DelayMode.Duration && (
               <>
                 <Field label="How long">
                   <InlineFields>
@@ -176,7 +178,7 @@ export function ConfigPanel({
               </>
             )}
 
-            {node.params.mode === 'until-event' && (
+            {node.params.mode === DelayMode.UntilEvent && (
               <>
                 <Field label="Wait until" hint="Stops waiting the moment this happens">
                   <Select
@@ -197,7 +199,7 @@ export function ConfigPanel({
               </>
             )}
 
-            {node.params.mode === 'until-date' && (
+            {node.params.mode === DelayMode.UntilDate && (
               <Field label="Date" hint="For a fixed deadline, e.g. the fee cut-off">
                 <TextInput
                   value={node.params.date}
@@ -209,7 +211,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'task' && (
+        {node.kind === NodeKind.Task && (
           <>
             <Field label="Assign to">
               <Select
@@ -239,7 +241,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'notify' && (
+        {node.kind === NodeKind.Notify && (
           <>
             <Field label="Notify">
               <Select
@@ -270,7 +272,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'status' && (
+        {node.kind === NodeKind.Status && (
           <>
             <Field label="Field">
               <Select
@@ -292,7 +294,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'allocate' && (
+        {node.kind === NodeKind.Allocate && (
           <>
             <Field label="Allocate">
               <Select
@@ -324,15 +326,8 @@ export function ConfigPanel({
               hint="Comma separated"
             >
               <TextInput
-                value={node.params.options.join(', ')}
-                onValueChange={(raw) =>
-                  onParams({
-                    options: raw
-                      .split(',')
-                      .map((option) => option.trim())
-                      .filter(Boolean),
-                  })
-                }
+                value={formatOptionList(node.params.options)}
+                onValueChange={(raw) => onParams({ options: parseOptionList(raw) })}
               />
             </Field>
 
@@ -350,7 +345,7 @@ export function ConfigPanel({
               ))}
             </div>
 
-            {node.params.method === 'Pick one option' && (
+            {node.params.method === AllocateMethod.PickOne && (
               <Field label="Which one">
                 <Select
                   value={node.params.value}
@@ -360,7 +355,7 @@ export function ConfigPanel({
               </Field>
             )}
 
-            {node.params.method === 'Match a sibling' && (
+            {node.params.method === AllocateMethod.MatchSibling && (
               <p className={styles.note}>
                 Siblings usually share a house. If the applicant has no sibling in the school, the
                 flow falls back to balancing.
@@ -369,7 +364,7 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'branch' && (
+        {node.kind === NodeKind.Branch && (
           <>
             <Field label="Check which field" hint="Every path tests this one field">
               <Select
@@ -388,7 +383,6 @@ export function ConfigPanel({
               }
             >
               {node.children.map((child, index) => {
-                const values = fieldValues(node.params.field)
                 const isLast = index === node.children.length - 1
                 return (
                   <div className={styles.path} key={child.id}>
@@ -409,23 +403,17 @@ export function ConfigPanel({
                     </div>
                     <InlineFields>
                       <Select
-                        value={child.pathCondition?.operator ?? '='}
+                        value={child.pathCondition?.operator ?? Operator.Equals}
                         options={OPERATOR_OPTIONS}
                         onValueChange={(operator) => onUpdatePath(index, { operator })}
                       />
-                      {values.length > 0 ? (
-                        <Select
-                          value={child.pathCondition?.value ?? ''}
-                          options={['', ...values]}
-                          onValueChange={(value) => onUpdatePath(index, { value })}
-                        />
-                      ) : (
-                        <TextInput
-                          value={child.pathCondition?.value ?? ''}
-                          placeholder="Value"
-                          onValueChange={(value) => onUpdatePath(index, { value })}
-                        />
-                      )}
+                      {/* Every admission field has a known value list, so the
+                          value is always a pick, never free text. */}
+                      <Select
+                        value={child.pathCondition?.value ?? ''}
+                        options={fieldValueOptionsWithBlank(node.params.field)}
+                        onValueChange={(value) => onUpdatePath(index, { value })}
+                      />
                     </InlineFields>
                     {!child.pathCondition?.value && (
                       <p className={styles.pathNote}>
@@ -441,14 +429,14 @@ export function ConfigPanel({
           </>
         )}
 
-        {node.kind === 'end' && (
+        {node.kind === NodeKind.End && (
           <p className={styles.note}>
             This path stops here. Nothing further is sent for an applicant who reaches it.
           </p>
         )}
       </div>
 
-      {node.kind !== 'trigger' && (
+      {node.kind !== NodeKind.Trigger && (
         <div className={styles.footer}>
           <Button variant="danger" iconLeft="trash" fullWidth onClick={onDelete}>
             Delete this step
@@ -500,17 +488,3 @@ function RetryFields({
   )
 }
 
-function glyphType(node: FlowNode) {
-  const map = {
-    trigger: 'trigger',
-    email: 'send-email',
-    task: 'create-task',
-    notify: 'send-notification',
-    status: 'update-status',
-    allocate: 'allocate',
-    branch: 'branch',
-    delay: 'delay',
-    end: 'end',
-  } as const
-  return map[node.kind]
-}

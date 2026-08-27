@@ -1,13 +1,15 @@
+import { NodeGroup, NodeKind, type FlowNode } from '../../types/flow'
+import { groupLabels, kindMeta, kindsInGroup } from '../../utils/nodeMeta'
+import { nodeRetry, nodeWarning, retryLabel, summarise } from '../../utils/nodeSummary'
 import {
-  groupLabels,
-  kindMeta,
-  nodeRetry,
-  nodeWarning,
-  summarise,
-  type NodeGroup,
-} from '../../lib/flowMeta'
-import type { FlowNode, NodeKind } from '../../types/flow'
-import { Icon, IconButton, Menu, MenuItem, MenuSection, NodeGlyph } from '../ui'
+  addStepHeading,
+  addStepTooltip,
+  canAddAfter,
+  canInsertAbove,
+  pathTone,
+} from '../../utils/nodeView'
+import { Icon, IconButton, Menu, MenuItem, MenuSection } from '../ui'
+import { NodeGlyph } from './NodeGlyph'
 import styles from './FlowCanvas.module.css'
 
 interface CanvasHandlers {
@@ -35,21 +37,15 @@ function Subtree({
 }: CanvasHandlers & { node: FlowNode; parentKind?: NodeKind }) {
   const { selectedId, onSelect, onAdd, onInsertBefore, onDelete } = handlers
   const hasChildren = node.children.length > 0
-  const isEnd = node.kind === 'end'
-
-  /* An End node only needs its own control when it heads a branch path -
-     anywhere else, the step above it already offers the same insertion point. */
-  const canInsertAbove = isEnd && parentKind === 'branch'
-  /* A branch owns exactly two labelled paths, so it must not gain a third
-     unlabelled child. Steps are added on the paths themselves instead. */
-  const canAddAfter = !isEnd && node.kind !== 'branch'
+  const showInsertAbove = canInsertAbove(node, parentKind)
+  const showAddAfter = canAddAfter(node)
 
   return (
     <div className={styles.subtree}>
       {/* An End node cannot have anything after it, so its control inserts
           above instead - otherwise a Yes/No path that already terminates
           could never be extended. */}
-      {canInsertAbove && (
+      {showInsertAbove && (
         <>
           <AddMenu node={node} mode="before" onPick={(kind) => onInsertBefore(node.id, kind)} />
           <span className={styles.stem} />
@@ -63,7 +59,7 @@ function Subtree({
         onDelete={() => onDelete(node.id)}
       />
 
-      {canAddAfter && (
+      {showAddAfter && (
         <>
           <span className={styles.stem} />
           <AddMenu node={node} mode="after" onPick={(kind) => onAdd(node.id, kind)} />
@@ -86,14 +82,7 @@ function Subtree({
                   {child.pathLabel && (
                     <span className={styles.pathTag}>
                       <span
-                        className={[
-                          styles.pathLabel,
-                          child.pathLabel === 'Yes'
-                            ? styles.pathYes
-                            : child.pathLabel === 'No'
-                              ? styles.pathNo
-                              : styles.pathOther,
-                        ].join(' ')}
+                        className={[styles.pathLabel, styles[pathTone(child.pathLabel)]].join(' ')}
                       >
                         {child.pathLabel}
                       </span>
@@ -142,7 +131,7 @@ function NodeCard({
       className={[
         styles.card,
         selected ? styles.selected : '',
-        node.kind === 'end' ? styles.endCard : '',
+        node.kind === NodeKind.End ? styles.endCard : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -155,11 +144,11 @@ function NodeCard({
       }}
     >
       <div className={styles.head}>
-        <NodeGlyph type={glyphType(node.kind)} size="sm" />
+        <NodeGlyph kind={node.kind} size="sm" />
         <span className={styles.kind}>{meta.label}</span>
       </div>
 
-      {node.kind !== 'end' && (
+      {node.kind !== NodeKind.End && (
         <>
           <div className={styles.title}>{node.title}</div>
           <div className={styles.summary}>{summarise(node)}</div>
@@ -171,7 +160,7 @@ function NodeCard({
           {retry?.enabled && (
             <span className={styles.chip}>
               <Icon name="undo" size={11} />
-              Retry x{retry.attempts} · every {retry.intervalHours}h
+              {retryLabel(retry)}
             </span>
           )}
           {warning && (
@@ -183,7 +172,7 @@ function NodeCard({
         </div>
       )}
 
-      {node.kind !== 'trigger' && (
+      {node.kind !== NodeKind.Trigger && (
         <span className={styles.delete}>
           <IconButton
             icon="trash"
@@ -200,7 +189,7 @@ function NodeCard({
   )
 }
 
-const addableGroups: NodeGroup[] = ['action', 'delay', 'logic']
+const ADDABLE_GROUPS: readonly NodeGroup[] = [NodeGroup.Action, NodeGroup.Delay, NodeGroup.Logic]
 
 function AddMenu({
   node,
@@ -211,13 +200,7 @@ function AddMenu({
   mode: 'after' | 'before'
   onPick: (kind: NodeKind) => void
 }) {
-  const parallel = mode === 'after' && node.children.length > 0
-  const heading =
-    mode === 'before'
-      ? 'Add a step before the end of this path'
-      : parallel
-        ? 'Add a parallel step — runs alongside'
-        : `Add a step after ${node.title}`
+  const heading = addStepHeading(node, mode)
 
   return (
     <Menu
@@ -228,13 +211,7 @@ function AddMenu({
           className={[styles.plus, open ? styles.plusOpen : ''].filter(Boolean).join(' ')}
           onClick={toggle}
           aria-label={heading}
-          title={
-            mode === 'before'
-              ? 'Add a step before the end'
-              : parallel
-                ? 'Add a parallel step'
-                : 'Add a step'
-          }
+          title={addStepTooltip(node, mode)}
         >
           <Icon name="plus" size={14} />
         </button>
@@ -243,12 +220,10 @@ function AddMenu({
       {(close) => (
         <>
           <MenuSection>{heading}</MenuSection>
-          {addableGroups.map((group) => (
+          {ADDABLE_GROUPS.map((group) => (
             <div key={group}>
               <MenuSection>{groupLabels[group]}</MenuSection>
-              {(Object.keys(kindMeta) as NodeKind[])
-                .filter((kind) => kindMeta[kind].group === group && kind !== 'end')
-                .map((kind) => (
+              {kindsInGroup(group).map((kind) => (
                   <MenuItem
                     key={kind}
                     label={kindMeta[kind].label}
@@ -258,8 +233,8 @@ function AddMenu({
                       onPick(kind)
                       close()
                     }}
-                  />
-                ))}
+                />
+              ))}
             </div>
           ))}
         </>
@@ -268,19 +243,3 @@ function AddMenu({
   )
 }
 
-/** NodeGlyph speaks the earlier node-type vocabulary; map onto it so the tints
- *  stay identical between the palette and the canvas. */
-function glyphType(kind: NodeKind) {
-  const map = {
-    trigger: 'trigger',
-    email: 'send-email',
-    task: 'create-task',
-    notify: 'send-notification',
-    status: 'update-status',
-    allocate: 'allocate',
-    branch: 'branch',
-    delay: 'delay',
-    end: 'end',
-  } as const
-  return map[kind]
-}

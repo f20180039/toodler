@@ -1,17 +1,59 @@
 /** The flow model: a tree. A node with two or more children fans out and the
  *  canvas draws them side by side, which is how "email the parent AND the
- *  admissions officer" is expressed. */
+ *  admissions officer" is expressed.
+ *
+ *  Every parameter is typed to the school's vocabulary in `./admissions`, so a
+ *  recipient can only ever be a real role and a status can only ever be a real
+ *  value for its field. */
 
-export type NodeKind =
-  | 'trigger'
-  | 'email'
-  | 'delay'
-  | 'task'
-  | 'notify'
-  | 'status'
-  | 'allocate'
-  | 'branch'
-  | 'end'
+import type {
+  AcademicYear,
+  AdmissionField,
+  AllocateMethod,
+  AllocateTarget,
+  FieldValue,
+  Grade,
+  NotifyChannel,
+  NotifyPriority,
+  Operator,
+  Role,
+  TaskPriority,
+  TriggerEvent,
+  WorkflowStage,
+} from './admissions'
+
+export enum NodeKind {
+  Trigger = 'trigger',
+  Email = 'email',
+  Delay = 'delay',
+  Task = 'task',
+  Notify = 'notify',
+  Status = 'status',
+  Allocate = 'allocate',
+  Branch = 'branch',
+  End = 'end',
+}
+
+/** How the node library groups itself: the question the user is asking when
+ *  they reach for a node — do something, decide, or wait. */
+export enum NodeGroup {
+  Trigger = 'trigger',
+  Action = 'action',
+  Logic = 'logic',
+  Delay = 'delay',
+}
+
+export enum DelayMode {
+  Duration = 'duration',
+  UntilEvent = 'until-event',
+  UntilDate = 'until-date',
+}
+
+export enum DelayUnit {
+  Minutes = 'minutes',
+  Hours = 'hours',
+  Days = 'days',
+}
 
 /** Delivery retry, on the nodes that talk to someone outside the school. */
 export interface Retry {
@@ -21,40 +63,40 @@ export interface Retry {
 }
 
 export interface TriggerParams {
-  event: string
-  grade: string
-  academicYear: string
+  event: TriggerEvent
+  grade: Grade
+  academicYear: AcademicYear
 }
 
 export interface EmailParams {
-  recipient: string
+  recipient: Role
   subject: string
-  sender: string
+  sender: Role
   retry: Retry
 }
-
-export type DelayMode = 'duration' | 'until-event' | 'until-date'
 
 export interface DelayParams {
   mode: DelayMode
   amount: number
-  unit: 'minutes' | 'hours' | 'days'
+  unit: DelayUnit
   excludeWeekends: boolean
-  event: string
+  /** Only read when the mode is UntilEvent. */
+  event: TriggerEvent
   maxWaitDays: number
+  /** Only read when the mode is UntilDate. */
   date: string
 }
 
 export interface TaskParams {
-  assignee: string
-  priority: 'Low' | 'Medium' | 'High'
+  assignee: Role
+  priority: TaskPriority
   dueInDays: number
 }
 
 export interface NotifyParams {
-  recipient: string
-  channel: 'In-app' | 'In-app + email'
-  priority: 'Normal' | 'Urgent'
+  recipient: Role
+  channel: NotifyChannel
+  priority: NotifyPriority
   retry: Retry
 }
 
@@ -62,32 +104,39 @@ export interface NotifyParams {
  *  that selects a path lives on the path itself (see `pathCondition`), which is
  *  what lets a branch have two paths or six. */
 export interface BranchParams {
-  field: string
+  field: AdmissionField
+}
+
+/** A partial edit to one of a branch's paths. */
+export interface PathPatch {
+  label?: string
+  operator?: Operator
+  value?: FieldValue | ''
 }
 
 export interface PathCondition {
-  operator: string
+  operator: Operator
   /** Empty value = the fallback path, taken when nothing else matches. */
-  value: string
+  value: FieldValue | ''
 }
 
 /** Moves the applicant along the admission stages, e.g. Application status ->
- *  Under review. The field list is the school's own vocabulary, not generic
- *  CRM properties. */
+ *  Under review. */
 export interface StatusParams {
-  field: string
-  value: string
+  field: AdmissionField
+  value: FieldValue
 }
 
 /** Assigns the student to a house or a class section. Allocation is usually a
  *  balancing job rather than a fixed value, which is why `method` exists at all
  *  - a school wants its four houses to come out even. */
 export interface AllocateParams {
-  target: 'House' | 'Class & section'
-  method: 'Balance across options' | 'Match a sibling' | 'Pick one option'
-  /** The pool being allocated from, e.g. the four houses or this grade's sections. */
+  target: AllocateTarget
+  method: AllocateMethod
+  /** The pool being allocated from. Free strings: houses are fixed, but a
+   *  school's section names are its own (A-D, Rose/Lotus, ...). */
   options: string[]
-  /** Used only when the method is "Pick one option". */
+  /** Only read when the method is PickOne. */
   value: string
 }
 
@@ -105,7 +154,8 @@ export type AnyParams =
 interface NodeBase {
   id: string
   title: string
-  /** Label printed on the connector into this node, e.g. "Yes" or "Waitlisted". */
+  /** Label printed on the connector into this node, e.g. "Yes" or "Waitlisted".
+   *  Free text: a school names its own paths. */
   pathLabel?: string
   /** Set on the children of a branch: the test that routes down this path. */
   pathCondition?: PathCondition
@@ -114,21 +164,22 @@ interface NodeBase {
 
 export type FlowNode = NodeBase &
   (
-    | { kind: 'trigger'; params: TriggerParams }
-    | { kind: 'email'; params: EmailParams }
-    | { kind: 'delay'; params: DelayParams }
-    | { kind: 'task'; params: TaskParams }
-    | { kind: 'notify'; params: NotifyParams }
-    | { kind: 'status'; params: StatusParams }
-    | { kind: 'allocate'; params: AllocateParams }
-    | { kind: 'branch'; params: BranchParams }
-    | { kind: 'end'; params: Record<string, never> }
+    | { kind: NodeKind.Trigger; params: TriggerParams }
+    | { kind: NodeKind.Email; params: EmailParams }
+    | { kind: NodeKind.Delay; params: DelayParams }
+    | { kind: NodeKind.Task; params: TaskParams }
+    | { kind: NodeKind.Notify; params: NotifyParams }
+    | { kind: NodeKind.Status; params: StatusParams }
+    | { kind: NodeKind.Allocate; params: AllocateParams }
+    | { kind: NodeKind.Branch; params: BranchParams }
+    | { kind: NodeKind.End; params: Record<string, never> }
   )
 
-/** One diagram. The admission journey has several stages, so there are several. */
+/** One diagram. The admission journey has several stages, so there are several,
+ *  and a stage can own more than one. */
 export interface Flow {
   id: string
-  stage: string
+  stage: WorkflowStage
   name: string
   root: FlowNode
 }

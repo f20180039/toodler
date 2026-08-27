@@ -1,18 +1,19 @@
-import { groupLabels, kindMeta, type NodeGroup } from '../../lib/flowMeta'
-import type { FlowNode, NodeKind } from '../../types/flow'
-import { NodeGlyph } from '../ui'
+import { NodeGroup, NodeKind, type FlowNode } from '../../types/flow'
+import { groupLabels, kindMeta, kindsInGroup } from '../../utils/nodeMeta'
+import { isAttachable } from '../../utils/nodeView'
+import { NodeGlyph } from './NodeGlyph'
 import styles from './NodePalette.module.css'
 
-const groups: NodeGroup[] = ['trigger', 'action', 'logic', 'delay']
+const GROUPS: readonly NodeGroup[] = Object.values(NodeGroup)
 
 /** Nodes that are designed for but not built. They stay visible so the node
  *  vocabulary reads as extensible rather than as everything there will ever be. */
-const comingSoon = [
-  { name: 'Send WhatsApp', glyph: 'send-email' },
-  { name: 'Send SMS', glyph: 'send-email' },
-  { name: 'Schedule interview', glyph: 'delay' },
-  { name: 'Request documents', glyph: 'create-task' },
-] as const
+const COMING_SOON: readonly { name: string; kind: NodeKind }[] = [
+  { name: 'Send WhatsApp', kind: NodeKind.Email },
+  { name: 'Send SMS', kind: NodeKind.Email },
+  { name: 'Schedule interview', kind: NodeKind.Delay },
+  { name: 'Request documents', kind: NodeKind.Task },
+]
 
 interface PaletteProps {
   /** The node a click will attach to. */
@@ -21,9 +22,9 @@ interface PaletteProps {
 }
 
 export function NodePalette({ selected, onAdd }: PaletteProps) {
-  /* A branch's two paths are edited on the paths themselves, and nothing runs
-     after an End - so neither can be an attach point. */
-  const attachable = selected.kind !== 'end' && selected.kind !== 'branch'
+  /* A branch's paths are edited on the paths themselves, and nothing runs after
+     an End - so neither can be an attach point. */
+  const attachable = isAttachable(selected)
   const parallel = attachable && selected.children.length > 0
 
   return (
@@ -31,9 +32,9 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
       <div className={styles.header}>
         <div className={styles.title}>Node types</div>
         <div className={styles.hint}>
-          {selected.kind === 'branch' ? (
+          {selected.kind === NodeKind.Branch ? (
             <>Select a step on the Yes or No path to add to it</>
-          ) : selected.kind === 'end' ? (
+          ) : selected.kind === NodeKind.End ? (
             <>Nothing runs after an End — use the + above it</>
           ) : (
             <>
@@ -44,10 +45,11 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
         </div>
       </div>
 
-      {groups.map((group) => {
-        const kinds = (Object.keys(kindMeta) as NodeKind[]).filter(
-          (kind) => kindMeta[kind].group === group && kind !== 'end',
-        )
+      {GROUPS.map((group) => {
+        /* The trigger is listed for completeness but never addable: a flow has
+           exactly one, and it is already on the canvas. */
+        const kinds =
+          group === NodeGroup.Trigger ? [NodeKind.Trigger] : [...kindsInGroup(group)]
         if (kinds.length === 0) return null
 
         return (
@@ -55,7 +57,7 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
             <div className={styles.groupTitle}>{groupLabels[group]}</div>
             {kinds.map((kind) => {
               /* A flow has exactly one trigger, and it is already on the canvas. */
-              const disabled = kind === 'trigger' || !attachable
+              const disabled = kind === NodeKind.Trigger || !attachable
               return (
                 <button
                   type="button"
@@ -64,12 +66,12 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
                   disabled={disabled}
                   onClick={() => onAdd(selected.id, kind)}
                   title={
-                    kind === 'trigger'
+                    kind === NodeKind.Trigger
                       ? 'A flow starts from one trigger'
                       : `Add ${kindMeta[kind].label}`
                   }
                 >
-                  <NodeGlyph type={glyphType(kind)} size="sm" />
+                  <NodeGlyph kind={kind} size="sm" />
                   <span className={styles.itemBody}>
                     <span className={styles.itemName}>{kindMeta[kind].label}</span>
                     <span className={styles.itemHint}>{kindMeta[kind].hint}</span>
@@ -83,9 +85,9 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
 
       <div className={styles.group}>
         <div className={styles.groupTitle}>Later</div>
-        {comingSoon.map((item) => (
+        {COMING_SOON.map((item) => (
           <button type="button" className={styles.item} key={item.name} disabled>
-            <NodeGlyph type={item.glyph} size="sm" />
+            <NodeGlyph kind={item.kind} size="sm" />
             <span className={styles.itemBody}>
               <span className={styles.itemName}>{item.name}</span>
             </span>
@@ -97,17 +99,3 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
   )
 }
 
-function glyphType(kind: NodeKind) {
-  const map = {
-    trigger: 'trigger',
-    email: 'send-email',
-    task: 'create-task',
-    notify: 'send-notification',
-    status: 'update-status',
-    allocate: 'allocate',
-    branch: 'branch',
-    delay: 'delay',
-    end: 'end',
-  } as const
-  return map[kind]
-}

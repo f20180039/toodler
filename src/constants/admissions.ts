@@ -5,7 +5,7 @@
  *  (who can send an email, who can own a task) are spelled out, because the
  *  subset itself is a product decision worth reading. */
 
-import type { DelayParams } from '../types/flow'
+import { DelayMode, DelayUnit } from '../types/flow'
 import {
   AcademicYear,
   AdmissionField,
@@ -76,7 +76,15 @@ export const ASSIGNEE_OPTIONS: readonly Role[] = [
 
 /* ---- delay -------------------------------------------------------------- */
 
-export const DELAY_UNIT_OPTIONS: readonly DelayParams['unit'][] = ['minutes', 'hours', 'days']
+export const DELAY_UNIT_OPTIONS: readonly DelayUnit[] = Object.values(DelayUnit)
+
+/** The delay node's mode picker. The label is the plain-language version of
+ *  the enum, which is what a school administrator reads. */
+export const DELAY_MODE_SEGMENTS: readonly { value: DelayMode; label: string }[] = [
+  { value: DelayMode.Duration, label: 'A duration' },
+  { value: DelayMode.UntilEvent, label: 'An event' },
+  { value: DelayMode.UntilDate, label: 'A date' },
+]
 
 /** Events a flow can sit and wait for, as opposed to start from. */
 export const WAIT_EVENT_OPTIONS: readonly TriggerEvent[] = [
@@ -114,10 +122,16 @@ export const FIELD_VALUES: Record<AdmissionField, readonly FieldValue[]> = {
   [AdmissionField.House]: Object.values(House),
 }
 
-/** The values a field can take. Accepts a plain string because the flow model
- *  still types `field` as one; it narrows here in a single place. */
-export function fieldValues(field: string): readonly FieldValue[] {
-  return FIELD_VALUES[field as AdmissionField] ?? []
+/** The values a field can take. */
+export function fieldValues(field: AdmissionField): readonly FieldValue[] {
+  return FIELD_VALUES[field] ?? []
+}
+
+/** The same values plus a blank, for the fallback path in the branch editor. */
+export function fieldValueOptionsWithBlank(
+  field: AdmissionField,
+): readonly (FieldValue | '')[] {
+  return ['', ...fieldValues(field)]
 }
 
 /* ---- allocation --------------------------------------------------------- */

@@ -18,5 +18,4 @@ export {
 export { Icon, type IconName } from './Icon'
 export { IconButton, type IconButtonProps } from './IconButton'
 export { Menu, MenuDivider, MenuItem, MenuSection } from './Menu'
-export { NodeGlyph } from './NodeGlyph'
 export { SegmentedControl, type Segment } from './SegmentedControl'

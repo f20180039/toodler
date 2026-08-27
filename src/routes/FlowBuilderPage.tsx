@@ -11,7 +11,8 @@ import {
   type Segment,
 } from '../components/ui'
 import { flows } from '../data/flows'
-import { nodeWarning } from '../lib/flowMeta'
+import { WorkflowStage } from '../types/admissions'
+import { nodeWarning } from '../utils/nodeSummary'
 import {
   addChild,
   addPath,
@@ -24,8 +25,9 @@ import {
   renameNode,
   updateParams,
   updatePath,
-} from '../lib/flowTree'
-import type { AnyParams, FlowNode, NodeKind } from '../types/flow'
+} from '../utils/flowTree'
+import type { AnyParams, FlowNode, NodeKind, PathPatch } from '../types/flow'
+import { flowsInStage, stagesWithFlows } from '../utils/nodeView'
 import styles from './FlowBuilderPage.module.css'
 
 /** Every stage keeps its own edited tree, so switching stages does not throw
@@ -43,15 +45,15 @@ export function FlowBuilderPage() {
   const [selectedId, setSelectedId] = useState(flows[1].root.id)
 
   const flow = flows.find((candidate) => candidate.id === flowId)!
-  /* The six journey stages from the brief, in order, plus anything added
-     beyond them. A stage may own several workflows. */
-  const stages = useMemo(() => [...new Set(flows.map((candidate) => candidate.stage))], [])
-  const stageFlows = flows.filter((candidate) => candidate.stage === flow.stage)
+  /* Stage order comes from the WorkflowStage enum, not from the order the flows
+     happen to be declared in. A stage may own several workflows. */
+  const stages = useMemo(() => stagesWithFlows(flows), [])
+  const stageFlows = flowsInStage(flows, flow.stage)
   const root = trees[flowId]
   const selected = findNode(root, selectedId) ?? root
   const warnings = collectWarnings(root, nodeWarning)
 
-  const stageSegments: Segment<string>[] = useMemo(
+  const stageSegments: Segment<WorkflowStage>[] = useMemo(
     () => stages.map((stage) => ({ value: stage, label: stage })),
     [stages],
   )
@@ -102,7 +104,7 @@ export function FlowBuilderPage() {
     setSelectedId(trees[nextFlowId].id)
   }
 
-  function handleStageChange(nextStage: string) {
+  function handleStageChange(nextStage: WorkflowStage) {
     const first = flows.find((candidate) => candidate.stage === nextStage)
     if (first) openFlow(first.id)
   }
@@ -141,10 +143,7 @@ export function FlowBuilderPage() {
     setSelectedId(addedId)
   }
 
-  function handleUpdatePath(
-    index: number,
-    patch: { label?: string; operator?: string; value?: string },
-  ) {
+  function handleUpdatePath(index: number, patch: PathPatch) {
     commit(updatePath(root, selected.id, index, patch))
   }
 

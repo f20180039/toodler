@@ -1,4 +1,27 @@
-import type { AnyParams, FlowNode, NodeKind } from '../types/flow'
+import { DEFAULT_HOUSES } from '../constants/admissions'
+import {
+  AcademicYear,
+  AdmissionField,
+  AllocateMethod,
+  AllocateTarget,
+  ApplicationStatus,
+  DocumentStatus,
+  Grade,
+  NotifyChannel,
+  NotifyPriority,
+  Operator,
+  Role,
+  TaskPriority,
+  TriggerEvent,
+} from '../types/admissions'
+import {
+  DelayMode,
+  DelayUnit,
+  NodeKind,
+  type AnyParams,
+  type FlowNode,
+  type PathPatch,
+} from '../types/flow'
 
 let sequence = 0
 
@@ -13,103 +36,119 @@ export function makeNode(kind: NodeKind): FlowNode {
   const id = nextId(kind)
 
   switch (kind) {
-    case 'trigger':
+    case NodeKind.Trigger:
       return {
         id,
         kind,
         title: 'Application submitted',
         children: [],
-        params: { event: 'Application submitted', grade: 'All grades', academicYear: '2026–27' },
+        params: {
+          event: TriggerEvent.ApplicationSubmitted,
+          grade: Grade.AllGrades,
+          academicYear: AcademicYear.Y2026,
+        },
       }
-    case 'email':
+    case NodeKind.Email:
       return {
         id,
         kind,
         title: 'New email',
         children: [],
         params: {
-          recipient: 'Parent / Guardian',
+          recipient: Role.Parent,
           subject: '',
-          sender: 'Admissions team',
+          sender: Role.AdmissionsTeam,
           retry: { enabled: true, attempts: 2, intervalHours: 24 },
         },
       }
-    case 'delay':
+    case NodeKind.Delay:
       return {
         id,
         kind,
         title: 'Wait',
         children: [],
         params: {
-          mode: 'duration',
+          mode: DelayMode.Duration,
           amount: 3,
-          unit: 'days',
+          unit: DelayUnit.Days,
           excludeWeekends: true,
-          event: 'Documents submitted',
+          event: TriggerEvent.DocumentsSubmitted,
           maxWaitDays: 5,
           date: '',
         },
       }
-    case 'task':
+    case NodeKind.Task:
       return {
         id,
         kind,
         title: 'Follow up',
         children: [],
-        params: { assignee: 'Admissions officer', priority: 'Medium', dueInDays: 2 },
+        params: {
+          assignee: Role.AdmissionsOfficer,
+          priority: TaskPriority.Medium,
+          dueInDays: 2,
+        },
       }
-    case 'notify':
+    case NodeKind.Notify:
       return {
         id,
         kind,
         title: 'Notify the team',
         children: [],
         params: {
-          recipient: 'Admissions team',
-          channel: 'In-app',
-          priority: 'Normal',
+          recipient: Role.AdmissionsTeam,
+          channel: NotifyChannel.InApp,
+          priority: NotifyPriority.Normal,
           retry: { enabled: false, attempts: 1, intervalHours: 6 },
         },
       }
-    case 'status':
+    case NodeKind.Status:
       return {
         id,
         kind,
         title: 'Move the applicant on',
         children: [],
-        params: { field: 'Application status', value: 'Under review' },
+        params: {
+          field: AdmissionField.ApplicationStatus,
+          value: ApplicationStatus.UnderReview,
+        },
       }
-    case 'allocate':
+    case NodeKind.Allocate:
       return {
         id,
         kind,
         title: 'Allocate a house',
         children: [],
         params: {
-          target: 'House',
-          method: 'Balance across options',
-          options: ['Red', 'Yellow', 'Blue', 'Green'],
+          target: AllocateTarget.House,
+          method: AllocateMethod.Balance,
+          options: [...DEFAULT_HOUSES],
           value: '',
         },
       }
-    case 'branch':
+    case NodeKind.Branch:
       return {
         id,
         kind,
         title: 'Check a condition',
         children: [
           {
-            ...makeNode('end'),
+            ...makeNode(NodeKind.End),
             title: 'End',
             pathLabel: 'Yes',
-            pathCondition: { operator: '=', value: 'Complete' },
+            pathCondition: { operator: Operator.Equals, value: DocumentStatus.Complete },
           },
           /* The last path carries no value: it is the fallback. */
-          { ...makeNode('end'), title: 'End', pathLabel: 'No', pathCondition: { operator: '=', value: '' } },
+          {
+            ...makeNode(NodeKind.End),
+            title: 'End',
+            pathLabel: 'No',
+            pathCondition: { operator: Operator.Equals, value: '' },
+          },
         ],
-        params: { field: 'Document status' },
+        params: { field: AdmissionField.DocumentStatus },
       }
-    case 'end':
+    case NodeKind.End:
       return { id, kind, title: 'End', children: [], params: {} }
   }
 }
@@ -187,7 +226,8 @@ export function deleteNode(root: FlowNode, id: string): FlowNode {
   function prune(node: FlowNode): FlowNode {
     const children = node.children.flatMap((child) => {
       if (child.id !== id) return [prune(child)]
-      const survivors = child.kind === 'branch' ? child.children.slice(0, 1) : child.children
+      const survivors =
+        child.kind === NodeKind.Branch ? child.children.slice(0, 1) : child.children
       return survivors.map((survivor, index) => ({
         ...survivor,
         pathLabel: index === 0 ? child.pathLabel : survivor.pathLabel,
@@ -202,12 +242,16 @@ export function deleteNode(root: FlowNode, id: string): FlowNode {
  *  availability, by destination campus, by fee plan. Two paths is just the
  *  common case, not the limit. */
 export function addPath(root: FlowNode, branchId: string): { tree: FlowNode; addedId: string } {
-  const added = makeNode('end')
+  const added = makeNode(NodeKind.End)
   const tree = replace(root, branchId, (node) => ({
     ...node,
     children: [
       ...node.children,
-      { ...added, pathLabel: `Path ${node.children.length + 1}`, pathCondition: { operator: '=', value: '' } },
+      {
+        ...added,
+        pathLabel: `Path ${node.children.length + 1}`,
+        pathCondition: { operator: Operator.Equals, value: '' },
+      },
     ],
   }))
   return { tree, addedId: added.id }
@@ -217,7 +261,7 @@ export function updatePath(
   root: FlowNode,
   branchId: string,
   index: number,
-  patch: { label?: string; operator?: string; value?: string },
+  patch: PathPatch,
 ): FlowNode {
   return replace(root, branchId, (node) => ({
     ...node,
@@ -228,7 +272,7 @@ export function updatePath(
             ...child,
             pathLabel: patch.label ?? child.pathLabel,
             pathCondition: {
-              operator: patch.operator ?? child.pathCondition?.operator ?? '=',
+              operator: patch.operator ?? child.pathCondition?.operator ?? Operator.Equals,
               value: patch.value ?? child.pathCondition?.value ?? '',
             },
           },

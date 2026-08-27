@@ -7,7 +7,7 @@ export interface Segment<T extends string> {
 }
 
 interface SegmentedControlProps<T extends string> {
-  segments: Segment<T>[]
+  segments: readonly Segment<T>[]
   value: T
   onChange: (value: T) => void
   label: string
