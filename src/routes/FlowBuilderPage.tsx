@@ -11,6 +11,7 @@ import {
   type Segment,
 } from '../components/ui'
 import { flows } from '../data/flows'
+import { useFlowLocation } from '../hooks/useFlowLocation'
 import { WorkflowStage } from '../types/admissions'
 import { nodeWarning } from '../utils/nodeSummary'
 import {
@@ -36,13 +37,22 @@ type Trees = Record<string, FlowNode>
 
 const seedTrees: Trees = Object.fromEntries(flows.map((flow) => [flow.id, flow.root]))
 
+/** Where a bare URL lands: the flow the brief itself describes. */
+const DEFAULT_FLOW_ID = 'application'
+
 export function FlowBuilderPage() {
   const [trees, setTrees] = useState<Trees>(seedTrees)
   /* Snapshots of the whole map, so undo works across stages too. */
   const [past, setPast] = useState<Trees[]>([])
   const [future, setFuture] = useState<Trees[]>([])
-  const [flowId, setFlowId] = useState(flows[1].id) // Application acknowledgement
-  const [selectedId, setSelectedId] = useState(flows[1].root.id)
+  /* Which workflow is open and which step is selected live in the query string
+     (?flow=...&step=...), so a diagram can be linked to and reloaded into. */
+  const {
+    flowId,
+    stepId: selectedId,
+    openFlow: openFlowAt,
+    selectStep: setSelectedId,
+  } = useFlowLocation({ flows, fallbackFlowId: DEFAULT_FLOW_ID })
 
   const flow = flows.find((candidate) => candidate.id === flowId)!
   /* Stage order comes from the WorkflowStage enum, not from the order the flows
@@ -100,8 +110,7 @@ export function FlowBuilderPage() {
   }, [undo, redo])
 
   function openFlow(nextFlowId: string) {
-    setFlowId(nextFlowId)
-    setSelectedId(trees[nextFlowId].id)
+    openFlowAt(nextFlowId, trees[nextFlowId].id)
   }
 
   function handleStageChange(nextStage: WorkflowStage) {
