@@ -69,7 +69,7 @@ except a step name, an email subject, a date and the section pool (→ D-23).
 
 | Field | Options | Notes |
 |---|---|---|
-| Field | Application status · Document status · Interview status · Decision · Payment status · Dues status · Seat availability · Transfer status · Offer status · Enrolment status · House | The school's own fields (→ D-12) |
+| Field | Application status · Document status · Interview status · Decision · Payment status · Dues status · Seat availability · Transfer status · Offer status · Enrolment status · House · Fee concession · Concession status | The school's own fields (→ D-12) |
 | New value | The values for that field | Choosing a field narrows the values, and resets the value to a valid one |
 
 Values by field: **Application status** Submitted · Under review · Shortlisted · Needs a second look ·
@@ -99,11 +99,27 @@ instead.
 `House → Blue`.
 **Warns when:** the method is *Pick one option* and nothing is chosen, or the pool is empty.
 
+## Adjust fee *(specified, not built)*
+
+| Field | Options | Notes |
+|---|---|---|
+| Concession | Merit scholarship · Merit-cum-need · Need-based aid · Faculty family · Sibling · Special allowance | Why the fee is being reduced. Recorded on the applicant, so finance can report on concessions by category |
+| Applies to | Total payable · Tuition fee · Admission fee · Transport fee | A 50% staff concession on *tuition* is not 50% off transport. Conflating them overstates the discount, and the finance team then corrects it by hand — which defeats the automation |
+| Adjustment | A percentage · A fixed amount | Merit awards are usually a percentage; a special allowance is often a negotiated figure. Supporting only one forces schools to fake the other |
+| Value | 0–100 for a percentage, otherwise an amount | |
+| Approval | Not required · Required, by Principal · Finance team · Admissions head | A concession is money leaving the school, so the node can hold until a named person signs it off (→ D-25) |
+| Valid for | This academic year · Until withdrawn | Most schools grant per year; a concession that silently persists across years is an audit problem |
+
+**Canvas summary:** `Merit-cum-need · 40% of tuition fee · needs Principal approval`, or
+`Faculty family · 50% of tuition fee`, or `Special allowance · ₹25,000 off total payable`.
+**Warns when:** the value is zero, a percentage is above 100, or approval is required with no
+approver named.
+
 ## Branch
 
 | Field | Options | Notes |
 |---|---|---|
-| Check which field | The eleven fields above | Every path tests this one field. Changing it clears the path values, since they came from the old field's vocabulary |
+| Check which field | The thirteen fields above | Every path tests this one field. Changing it clears the path values, since they came from the old field's vocabulary |
 | Paths | Two or more. Each has a name, an operator and a value | Add path · remove path (minimum two) |
 | Operator | `=` · `is not` · `is empty` · `is not empty` | `is empty` and `is not empty` need no value and still count as configured (→ D-17) |
 | Value | The values for the chosen field, or blank | **Blank means fallback:** the path taken when nothing else matches |

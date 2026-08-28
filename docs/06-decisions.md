@@ -264,3 +264,34 @@ nodes and configuration. A list screen, a create wizard and a product nav demons
 and consume the reviewer's attention. The diagram is the deliverable.
 **Trade-off** it costs the lifecycle story (D-10) and the templates idea, and it means the prototype
 cannot show how a school finds a workflow in the first place. Both are stated rather than hidden.
+
+### D-25 · Fee adjustment is its own node, and it can require approval
+**Options** treat a concession as a status value and let finance apply the money by hand · a
+percentage field on the payment email · a dedicated Adjust fee node.
+**Choice** an Adjust fee node carrying the concession category, the fee head it applies to, a
+percentage *or* a fixed amount, an optional approval gate naming who signs it off, and how long it
+holds.
+**Why** this is the only node that moves money, and three details make it more than a discount field.
+It names the **fee head**, because a 50% staff concession on tuition is not 50% off transport, and a
+node that overstates the reduction gets corrected by hand — which defeats the automation. It supports
+**percentage or amount**, because merit awards are proportional and a discretionary allowance is
+usually a negotiated figure. And it can **hold for approval**, because a concession is money leaving
+the school: a workflow that grants ₹40,000 with nobody's name against it is a governance hole, not an
+efficiency. The approval is a property of this node rather than a separate task, so the money and the
+authority for it cannot drift apart.
+**Trade-off** the prototype cannot show any of it working — nothing executes, so approval is a label
+and the arithmetic is a summary string. It also raises fee *structure* (heads, instalments, late
+fees), which this product does not model at all yet.
+
+### D-26 · The workflow routes on a claimed concession; it does not decide eligibility
+**Options** encode eligibility rules in the branch (income thresholds, merit cut-offs) · route on
+what the family claimed and let a human decide.
+**Choice** `Fee concession` is claimed data. The workflow branches on the claim, collects the
+evidence, and applies the figure once someone with authority approves it.
+**Why** merit-cum-need aid is a judgement about documents and family circumstances, and a school that
+automates the judgement inherits the fairness argument for it. Automating the *chase* — verify the
+income proof, get the Principal's sign-off, send the revised schedule — is where the time actually
+goes, and it leaves the decision with the person who is accountable for it. Faculty-family concession
+is the exception that proves the rule: it needs no evidence, so its path has no verification task.
+**Trade-off** a school wanting automatic slab-based concessions (income band → percentage) cannot
+express it. That needs a rules table, not a branch, and it is a bigger product than this round.

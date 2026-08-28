@@ -49,9 +49,16 @@ list rather than from a generic contact-property store (→ D-12).
 | Seat availability | Available · Waitlist · No seat | Branch condition on a transfer |
 | Transfer status | Requested · Approved · Waitlisted · Declined · Completed | Status update on a transfer |
 | House | Red · Yellow · Blue · Green | Allocation target, and a branch condition |
+| Fee concession | None · Merit scholarship · Merit-cum-need · Need-based aid · Faculty family · Sibling · Special allowance | Branch condition — which concession a family has claimed |
+| Concession status | Not claimed · Requested · Documents pending · Approved · Rejected | Branch condition, status update |
 | Roles | Parent/Guardian · Applicant · Admissions officer · Assigned counsellor · Class teacher · Finance team · Admissions team · Admissions head · Interview panel · Principal · Records team · Destination admissions officer · Destination coordinator · House captain | Email recipients, task assignees, notification targets |
 
-The last four field rows arrived with the transfer and decision workflows: a vocabulary designed
+Fee concession is deliberately *claimed* data, not something the workflow decides: eligibility for
+merit-cum-need aid is a human judgement on documents and family circumstances. The workflow's job is
+to route on the claim, gather the evidence, and apply the figure once someone with authority has
+approved it (→ D-26).
+
+The last four status field rows arrived with the transfer and decision workflows: a vocabulary designed
 around one stage does not survive contact with the next one, which is the argument for keeping it in
 one place rather than scattered through the screens.
 

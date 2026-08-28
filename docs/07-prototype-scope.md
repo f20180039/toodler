@@ -49,8 +49,9 @@ silently turning a decision into parallel steps.
 
 ## Not built, and stated rather than hidden
 
-**Designed, deferred:** the Draft / Active / Paused lifecycle and the review-before-activation step
-(→ D-10) · re-entry control on the trigger (→ D-14) · a template library so a school never faces a
+**Designed, deferred:** the **Adjust fee** node and the fee-concession workflow — specified field by
+field in `04` and `02`, not yet on screen (→ D-25, D-26) · the Draft / Active / Paused lifecycle and
+the review-before-activation step (→ D-10) · re-entry control on the trigger (→ D-14) · a template library so a school never faces a
 blank canvas · per-workflow analytics.
 
 **Out of scope by the brief:** any execution. No backend, no database, no authentication, no
@@ -63,17 +64,21 @@ credibility in a demo than an honest absence (→ D-15).
 
 ## Open questions for the Round 3 scope lock
 
-1. **Mid-flight state changes.** An applicant pays while sitting inside a five-day delay. Does the
+1. **Two workflows on one trigger.** The fee-concession flow and the payment reminder both start at
+   *Applicant enrolled*, and the adjusted amount has to land before the reminder computes what is
+   outstanding. Ordering between workflows sharing a trigger is undefined in this model — sequence
+   them, let one wait on the other, or merge them?
+2. **Mid-flight state changes.** An applicant pays while sitting inside a five-day delay. Does the
    workflow re-evaluate, or send the reminder anyway? The single sharpest execution question, and it
    changes what the builder must let a user express.
-2. **Goal / exit criteria.** Should a workflow have a goal that removes an applicant the moment it is
+3. **Goal / exit criteria.** Should a workflow have a goal that removes an applicant the moment it is
    met, instead of repeating the same branch twice? It would visibly simplify workflow 8.
-3. **Merging paths.** After a fan-out, paths never rejoin — the model is a tree, not a graph. "Wait
+4. **Merging paths.** After a fan-out, paths never rejoin — the model is a tree, not a graph. "Wait
    for both, then continue" needs a join node.
-4. **Where a transfer workflow runs** — source campus, destination, or the group (→ D-20).
-5. **Recipient resolution.** Which parent receives the email when an applicant has two guardians,
+5. **Where a transfer workflow runs** — source campus, destination, or the group (→ D-20).
+6. **Recipient resolution.** Which parent receives the email when an applicant has two guardians,
    and what happens to twelve workflows when the assigned counsellor leaves (→ D-13).
-6. **Multi-trigger.** Do we lift the one-trigger constraint, and what are the dedupe rules if we do
+7. **Multi-trigger.** Do we lift the one-trigger constraint, and what are the dedupe rules if we do
    (→ D-02)?
-7. **WhatsApp.** Round 4 or later? It changes the node model more than any other addition, because
+8. **WhatsApp.** Round 4 or later? It changes the node model more than any other addition, because
    it brings opt-in state per family.

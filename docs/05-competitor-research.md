@@ -37,10 +37,16 @@ numbers.
 | Parallel steps from one node | Yes | Yes | Yes | Typical | **Yes** — drawn side by side |
 | Delivery retry on a message | Partial | Partial | — | Varies | **Yes** — attempts and interval (→ D-21) |
 | House / class allocation | No | No | No | Yes | **Yes** — balanced or sibling-matched (→ D-18) |
+| Fee concession / discount | No — no notion of a fee | No | No | Yes — scholarships and staff concessions are standard | **Specified, not built** — category, fee head, % or amount, approval gate (→ D-25) |
 | Linkable diagram (URL state) | Yes | Yes | Yes | Varies | **Yes** — `?flow=…&step=…` (→ D-22) |
 
 Three observations drove scope more than the feature counts:
 
+0. **None of the generic tools know what a fee is.** HubSpot, ActiveCampaign and Mailchimp can send a
+   payment reminder but have no concept of a fee head, a concession or an approval on money — so a
+   school running merit-cum-need aid through them keeps that in a spreadsheet regardless. The
+   admissions CRMs do handle it, which is the clearest signal that it belongs in the product rather
+   than in the "nice to have" pile.
 1. **The generic tools are property-driven.** A school adopting HubSpot must first model applicants,
    grades and document status as custom contact properties. That modelling work is the gap we
    close by shipping `01`'s vocabulary as first-class fields (→ D-12).
@@ -59,8 +65,9 @@ weekend exclusion · parallel steps drawn side by side · configuration summarie
 advisory validation · undo and redo · linkable diagrams · nine workflows across the six journey
 stages plus inter-branch transfer.
 
-**Next — designed for, not built.** The Draft / Active / Paused lifecycle with a review step before
-activation, which is the highest-value gap (→ D-10) · re-entry control on the trigger (→ D-14) ·
+**Next — designed for, not built.** Fee concessions: the Adjust fee node and the concession workflow,
+specified in `04` and `02` (→ D-25) · the Draft / Active / Paused lifecycle with a review step before
+activation (→ D-10) · re-entry control on the trigger (→ D-14) ·
 WhatsApp and SMS, the channel parents actually reply on · a template library so a school never starts
 from a blank canvas · academic-calendar awareness on delays, so vacations are excluded the way
 weekends are · waiting relative to a date field (→ D-04) · per-workflow analytics on the canvas.

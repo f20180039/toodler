@@ -35,6 +35,11 @@ One trigger per workflow (→ D-02). Nine events, one per way an admission journ
 | **Notify team** | Tells a person or team something, with no accountability attached | three |
 | **Update status** | Moves the applicant along: sets an admissions field to a new value | four |
 | **Allocate** | Assigns a house or a class section, by balancing or by matching a sibling | Enrolment |
+| **Adjust fee** *(specified, not built)* | Applies a concession — a percentage or a fixed amount off a named fee head, with an approval gate | Payment |
+
+`Adjust fee` is the only node that moves money. It is separate from `Update status` for the same
+reason `Allocate` is — it computes a figure rather than setting a known value — and it is the only
+node that can require a named person's approval before it takes effect (→ D-25).
 
 `Create task` and `Notify team` look similar and are deliberately separate: one answers "who is
 chasing this family?", the other does not (→ D-11). `Allocate` is separate from `Update status` for
