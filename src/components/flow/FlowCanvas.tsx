@@ -6,6 +6,7 @@ import {
   addStepTooltip,
   canAddAfter,
   canInsertAbove,
+  formatCondition,
   pathTone,
   type PathTone,
 } from '../../utils/nodeView'
@@ -99,9 +100,7 @@ function Subtree({
                           to tell you why this path was taken. */}
                       {node.children.length > 2 && (
                         <span className={styles.pathCond}>
-                          {child.pathCondition?.value
-                            ? `${child.pathCondition.operator} ${child.pathCondition.value}`
-                            : 'otherwise'}
+                          {formatCondition(child.pathCondition)}
                         </span>
                       )}
                     </span>

@@ -1,6 +1,6 @@
-import { AllocateMethod } from '../types/admissions'
-import { DelayMode, NodeKind, type FlowNode, type Retry } from '../types/flow'
-import { isPathConfigured } from './nodeView'
+import { AdjustBasis, AdjustKind, AllocateMethod } from '../types/admissions'
+import { DelayMode, NodeKind, type AdjustFeeParams, type FlowNode, type Retry } from '../types/flow'
+import { describeCondition, isPathConfigured } from './nodeView'
 
 /** The line printed under the title on the node itself, so the diagram can be
  *  read without opening anything — never the word "Configured". */
@@ -40,12 +40,15 @@ export function summarise(node: FlowNode): string {
       return `${target} · balanced across ${options.length} options`
     }
 
+    case NodeKind.AdjustFee:
+      return summariseAdjustment(node.params)
+
     case NodeKind.Branch: {
       /* Two paths read best as the plain condition; more than two read best as
          a count, with each path labelled on its own connector. */
       const [first] = node.children
-      if (node.children.length === 2 && first?.pathCondition?.value) {
-        return `${node.params.field} ${first.pathCondition.operator} ${first.pathCondition.value}`
+      if (node.children.length === 2 && isPathConfigured(first?.pathCondition)) {
+        return describeCondition(node.params.field, first.pathCondition)
       }
       return `${node.params.field} · ${node.children.length} paths`
     }
@@ -53,6 +56,26 @@ export function summarise(node: FlowNode): string {
     case NodeKind.End:
       return 'This path stops here'
   }
+}
+
+/** A concession reads as the category and the arithmetic; a credit reads as
+ *  what is being deducted and from which bill. The approval, where there is
+ *  one, is the part a reader most needs on the node itself. */
+function summariseAdjustment(params: AdjustFeeParams): string {
+  const head = params.appliesTo.toLowerCase()
+
+  if (params.kind === AdjustKind.Credit) {
+    return `Credit · ${params.creditFrom.toLowerCase()} off the ${head}`
+  }
+
+  const amount =
+    params.basis === AdjustBasis.Percentage
+      ? `${params.value}% of ${head}`
+      : `₹${params.value.toLocaleString('en-IN')} off ${head}`
+  const approval = params.approvalRequired
+    ? ` · needs ${params.approver || 'someone'} approval`
+    : ''
+  return `${params.concession} · ${amount}${approval}`
 }
 
 export function nodeRetry(node: FlowNode): Retry | undefined {
@@ -86,6 +109,18 @@ export function nodeWarning(node: FlowNode): string | undefined {
         return 'Choose an option'
       }
       return node.params.options.length === 0 ? 'Add the options to allocate from' : undefined
+
+    case NodeKind.AdjustFee: {
+      /* A credit needs neither a value nor approval — the amount is whatever
+         the family already paid. */
+      if (node.params.kind === AdjustKind.Credit) return undefined
+      if (!node.params.value) return 'Set the amount to adjust'
+      if (node.params.basis === AdjustBasis.Percentage && node.params.value > 100) {
+        return 'A percentage cannot be above 100'
+      }
+      if (node.params.approvalRequired && !node.params.approver) return 'Name the approver'
+      return undefined
+    }
 
     case NodeKind.Delay:
       return node.params.mode === DelayMode.Duration && !node.params.amount

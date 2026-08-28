@@ -8,18 +8,26 @@
 
 import type {
   AcademicYear,
+  AdjustBasis,
+  AdjustKind,
+  AdjustValidity,
   AdmissionField,
   AllocateMethod,
   AllocateTarget,
+  CreditSource,
+  FeeConcession,
+  FeeHead,
   FieldValue,
   Grade,
   NotifyChannel,
   NotifyPriority,
   Operator,
+  ReentryRule,
   Role,
   TaskPriority,
   TriggerEvent,
   WorkflowStage,
+  WorkflowState,
 } from './admissions'
 
 export enum NodeKind {
@@ -30,6 +38,7 @@ export enum NodeKind {
   Notify = 'notify',
   Status = 'status',
   Allocate = 'allocate',
+  AdjustFee = 'adjust-fee',
   Branch = 'branch',
   End = 'end',
 }
@@ -66,6 +75,8 @@ export interface TriggerParams {
   event: TriggerEvent
   grade: Grade
   academicYear: AcademicYear
+  /** How often one applicant may enter this workflow (→ D-14). */
+  reentry: ReentryRule
 }
 
 export interface EmailParams {
@@ -107,17 +118,21 @@ export interface BranchParams {
   field: AdmissionField
 }
 
+/** A status value from the field's own list, a number of days for the overdue
+ *  fields, or blank for the fallback path. */
+export type ConditionValue = FieldValue | number | ''
+
 /** A partial edit to one of a branch's paths. */
 export interface PathPatch {
   label?: string
   operator?: Operator
-  value?: FieldValue | ''
+  value?: ConditionValue
 }
 
 export interface PathCondition {
   operator: Operator
   /** Empty value = the fallback path, taken when nothing else matches. */
-  value: FieldValue | ''
+  value: ConditionValue
 }
 
 /** Moves the applicant along the admission stages, e.g. Application status ->
@@ -140,6 +155,28 @@ export interface AllocateParams {
   value: string
 }
 
+/** The only node that moves money. A *concession* reduces what a family owes;
+ *  a *credit* deducts what the school already holds — the token fee coming off
+ *  the final bill (→ D-25, D-37). */
+export interface AdjustFeeParams {
+  kind: AdjustKind
+  /** Concessions only: the category, recorded on the applicant so finance can
+   *  report by it. */
+  concession: FeeConcession
+  /** Credits only: what the money already received was paid as. */
+  creditFrom: CreditSource
+  /** The fee head this touches. Never the token fee (→ D-35). */
+  appliesTo: FeeHead
+  /** Concessions only — a credit is whatever was received. */
+  basis: AdjustBasis
+  value: number
+  /** A concession is money leaving the school, so it can hold for a named
+   *  person's sign-off (→ D-25). */
+  approvalRequired: boolean
+  approver: Role | ''
+  validity: AdjustValidity
+}
+
 export type AnyParams =
   | TriggerParams
   | EmailParams
@@ -148,6 +185,7 @@ export type AnyParams =
   | NotifyParams
   | StatusParams
   | AllocateParams
+  | AdjustFeeParams
   | BranchParams
   | Record<string, never>
 
@@ -171,6 +209,7 @@ export type FlowNode = NodeBase &
     | { kind: NodeKind.Notify; params: NotifyParams }
     | { kind: NodeKind.Status; params: StatusParams }
     | { kind: NodeKind.Allocate; params: AllocateParams }
+    | { kind: NodeKind.AdjustFee; params: AdjustFeeParams }
     | { kind: NodeKind.Branch; params: BranchParams }
     | { kind: NodeKind.End; params: Record<string, never> }
   )
@@ -181,5 +220,8 @@ export interface Flow {
   id: string
   stage: WorkflowStage
   name: string
+  /** Where the workflow is in its lifecycle. Seeded per workflow, then moved
+   *  by the header control — activation goes through a review (→ D-10). */
+  state: WorkflowState
   root: FlowNode
 }
