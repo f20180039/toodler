@@ -47,6 +47,12 @@ export const kindMeta: Record<NodeKind, NodeMeta> = {
     group: NodeGroup.Action,
     hint: 'Assign a house or a class section',
   },
+  [NodeKind.AdjustFee]: {
+    label: 'Adjust fee',
+    icon: 'rupee',
+    group: NodeGroup.Action,
+    hint: 'Apply a concession, or credit a fee already paid',
+  },
   [NodeKind.Branch]: {
     label: 'Branch',
     icon: 'branch',

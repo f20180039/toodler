@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ConfigPanel, FlowCanvas, NodePalette } from '../components/flow'
+import { ActivationDialog, ConfigPanel, FlowCanvas, NodePalette } from '../components/flow'
 import {
   Button,
   Icon,
@@ -12,7 +12,8 @@ import {
 } from '../components/ui'
 import { flows } from '../data/flows'
 import { useFlowLocation } from '../hooks/useFlowLocation'
-import { WorkflowStage, type AdmissionField } from '../types/admissions'
+import { WORKFLOW_STATE_OPTIONS } from '../constants/admissions'
+import { WorkflowStage, WorkflowState, type AdmissionField } from '../types/admissions'
 import { nodeWarning } from '../utils/nodeSummary'
 import {
   addChild,
@@ -38,11 +39,36 @@ type Trees = Record<string, FlowNode>
 
 const seedTrees: Trees = Object.fromEntries(flows.map((flow) => [flow.id, flow.root]))
 
+/** Draft / Active / Paused, per workflow. Kept beside the trees rather than in
+ *  them: the lifecycle is a property of the workflow, not of its diagram
+ *  (→ D-10). */
+type States = Record<string, WorkflowState>
+
+const seedStates: States = Object.fromEntries(flows.map((flow) => [flow.id, flow.state]))
+
+/** What each state means, said in the menu rather than assumed. */
+const STATE_HINTS: Record<WorkflowState, string> = {
+  [WorkflowState.Draft]: 'Being built. Nothing runs, and it can be saved incomplete.',
+  [WorkflowState.Active]: 'Running for every applicant who matches the trigger.',
+  [WorkflowState.Paused]: 'Stopped. Applicants already inside it stay where they are.',
+}
+
+/** How each state reads on the pill. */
+const STATE_DOT: Record<WorkflowState, 'stateDraft' | 'stateActive' | 'statePaused'> = {
+  [WorkflowState.Draft]: 'stateDraft',
+  [WorkflowState.Active]: 'stateActive',
+  [WorkflowState.Paused]: 'statePaused',
+}
+
 /** Where a bare URL lands: the flow the brief itself describes. */
 const DEFAULT_FLOW_ID = 'application'
 
 export function FlowBuilderPage() {
   const [trees, setTrees] = useState<Trees>(seedTrees)
+  const [states, setStates] = useState<States>(seedStates)
+  /* Set while the activation review is open. Nothing goes live until the user
+     has read what the workflow will do (→ D-10). */
+  const [reviewing, setReviewing] = useState(false)
   /* The step validator is called from the URL hook, which must not re-subscribe
      on every edit - so it reads the trees through a ref. */
   const treesRef = useRef(trees)
@@ -74,6 +100,7 @@ export function FlowBuilderPage() {
   const root = trees[flowId]
   const selected = findNode(root, selectedId) ?? root
   const warnings = collectWarnings(root, nodeWarning)
+  const state = states[flowId]
 
   const stageSegments: Segment<WorkflowStage>[] = useMemo(
     () => stages.map((stage) => ({ value: stage, label: stage })),
@@ -176,10 +203,28 @@ export function FlowBuilderPage() {
     commit(removePath(root, selected.id, index))
   }
 
+  /* Any move *into* Active goes through the review. Pausing and going back to
+     a draft are immediate: the response to an incident is "stop it now", and
+     nothing about stopping needs a confirmation screen (→ D-10). */
+  function handleStateChange(next: WorkflowState) {
+    if (next === state) return
+    if (next === WorkflowState.Active) {
+      setReviewing(true)
+      return
+    }
+    setStates((current) => ({ ...current, [flowId]: next }))
+  }
+
+  function handleActivate() {
+    setStates((current) => ({ ...current, [flowId]: WorkflowState.Active }))
+    setReviewing(false)
+  }
+
   function handleReset() {
     setPast((history) => [...history, trees])
     setFuture([])
     setTrees((current) => ({ ...current, [flowId]: flow.root }))
+    setStates((current) => ({ ...current, [flowId]: flow.state }))
     setSelectedId(flow.root.id)
   }
 
@@ -243,6 +288,40 @@ export function FlowBuilderPage() {
           <span className={styles.flowName}>{flow.name}</span>
         )}
 
+        <Menu
+          width={288}
+          trigger={({ open, toggle }) => (
+            <button
+              type="button"
+              className={[styles.state, open ? styles.stateOpen : ''].filter(Boolean).join(' ')}
+              onClick={toggle}
+              title="Draft, Active or Paused"
+            >
+              <span className={[styles.stateDot, styles[STATE_DOT[state]]].join(' ')} />
+              {state}
+              <Icon name="chevron-down" size={14} />
+            </button>
+          )}
+        >
+          {(close) => (
+            <>
+              <MenuSection>Workflow state</MenuSection>
+              {WORKFLOW_STATE_OPTIONS.map((candidate) => (
+                <MenuItem
+                  key={candidate}
+                  label={candidate}
+                  description={STATE_HINTS[candidate]}
+                  selected={candidate === state}
+                  onSelect={() => {
+                    handleStateChange(candidate)
+                    close()
+                  }}
+                />
+              ))}
+            </>
+          )}
+        </Menu>
+
         <span className={styles.spacer} />
 
         <div className={styles.meta}>
@@ -295,6 +374,15 @@ export function FlowBuilderPage() {
           onRemovePath={handleRemovePath}
         />
       </div>
+
+      {reviewing && (
+        <ActivationDialog
+          flowName={flow.name}
+          root={root}
+          onCancel={() => setReviewing(false)}
+          onActivate={handleActivate}
+        />
+      )}
     </div>
   )
 }

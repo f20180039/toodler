@@ -1,7 +1,8 @@
 /** Pure helpers the components used to declare inline. Nothing here touches
  *  React or CSS: a component maps the returned token to its own styles. */
 
-import { Operator, WorkflowStage } from '../types/admissions'
+import { Operator, WorkflowStage, type AdmissionField } from '../types/admissions'
+import { isNumericOperator } from '../constants/admissions'
 import { NodeKind, type Flow, type FlowNode, type PathCondition } from '../types/flow'
 
 export type PathTone = 'yes' | 'no' | 'other'
@@ -27,6 +28,28 @@ export function isPathConfigured(condition: PathCondition | undefined): boolean 
 /** Whether this path is the catch-all: no condition of its own to match. */
 export function isFallbackPath(condition: PathCondition | undefined): boolean {
   return !isPathConfigured(condition)
+}
+
+/** The condition as it is printed under a path label, or inside a two-path
+ *  branch summary. A numeric comparison carries its unit, because "more than 3"
+ *  on its own does not say three of what. */
+export function formatCondition(condition: PathCondition | undefined): string {
+  if (!isPathConfigured(condition) || !condition) return 'otherwise'
+  if (condition.operator === Operator.IsEmpty || condition.operator === Operator.IsNotEmpty) {
+    return condition.operator
+  }
+  if (isNumericOperator(condition.operator)) {
+    return `${condition.operator} ${condition.value} days`
+  }
+  return `${condition.operator} ${condition.value}`
+}
+
+/** The same, prefixed with the field the branch tests. */
+export function describeCondition(
+  field: AdmissionField,
+  condition: PathCondition | undefined,
+): string {
+  return `${field} ${formatCondition(condition)}`
 }
 
 /** The heading shown above the node picker. Adding to a node that already has

@@ -1,6 +1,9 @@
-import { DEFAULT_HOUSES } from '../constants/admissions'
+import { DEFAULT_HOUSES, isNumericField, isNumericOperator } from '../constants/admissions'
 import {
   AcademicYear,
+  AdjustBasis,
+  AdjustKind,
+  AdjustValidity,
   AdmissionField,
   AllocateMethod,
   AllocateTarget,
@@ -9,7 +12,11 @@ import {
   Grade,
   NotifyChannel,
   NotifyPriority,
+  CreditSource,
+  FeeConcession,
+  FeeHead,
   Operator,
+  ReentryRule,
   Role,
   TaskPriority,
   TriggerEvent,
@@ -46,6 +53,7 @@ export function makeNode(kind: NodeKind): FlowNode {
           event: TriggerEvent.ApplicationSubmitted,
           grade: Grade.AllGrades,
           academicYear: AcademicYear.Y2026,
+          reentry: ReentryRule.Once,
         },
       }
     case NodeKind.Email:
@@ -124,6 +132,24 @@ export function makeNode(kind: NodeKind): FlowNode {
           method: AllocateMethod.Balance,
           options: [...DEFAULT_HOUSES],
           value: '',
+        },
+      }
+    case NodeKind.AdjustFee:
+      return {
+        id,
+        kind,
+        title: 'Apply the concession',
+        children: [],
+        params: {
+          kind: AdjustKind.Concession,
+          concession: FeeConcession.MeritCumNeed,
+          creditFrom: CreditSource.TokenFee,
+          appliesTo: FeeHead.AdmissionFee,
+          basis: AdjustBasis.Percentage,
+          value: 25,
+          approvalRequired: true,
+          approver: Role.Principal,
+          validity: AdjustValidity.ThisYear,
         },
       }
     case NodeKind.Branch:
@@ -266,11 +292,20 @@ export function setBranchField(root: FlowNode, branchId: string, field: Admissio
     children: node.children.map((child) => ({
       ...child,
       pathCondition: {
-        operator: child.pathCondition?.operator ?? Operator.Equals,
+        operator: operatorFor(field, child.pathCondition?.operator),
         value: '' as const,
       },
     })),
   }) as FlowNode)
+}
+
+/** Keeps the operator in the family the field accepts: `= Pending` is nonsense
+ *  on a day count, and `more than` is nonsense on a status (→ D-33). */
+function operatorFor(field: AdmissionField, current: Operator | undefined): Operator {
+  const numericField = isNumericField(field)
+  const operator = current ?? Operator.Equals
+  if (numericField) return isNumericOperator(operator) ? operator : Operator.MoreThan
+  return isNumericOperator(operator) ? Operator.Equals : operator
 }
 
 export function updatePath(

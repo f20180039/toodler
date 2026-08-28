@@ -12,7 +12,13 @@ email, delay and branch recur at every stage (→ D-01).
 
 ## Triggers — start the workflow
 
-One trigger per workflow (→ D-02). Nine events, one per way an admission journey actually begins.
+One trigger per workflow (→ D-02), with a re-entry rule saying how often one applicant may enter it
+(→ D-14). Fifteen events. Most are ways a journey begins; *Seat released*
+is how it resumes for somebody else, and the payment events exist separately because a **failed**
+payment and an **unpaid** one call for opposite responses (→ D-32).
+
+Which trigger a fee workflow hangs off is how a school says *where* in its journey that fee sits — the
+product does not decide for it (→ D-30).
 
 | Trigger | Fires when | Used by |
 |---|---|---|
@@ -23,19 +29,25 @@ One trigger per workflow (→ D-02). Nine events, one per way an admission journ
 | Interview completed | The panel marks the interview done | Decision |
 | Offer accepted | The family accepts the offer | Enrolment |
 | Applicant enrolled | Enrolment is confirmed | Payment |
-| Payment received | A fee payment lands | — (available) |
+| Payment received | Any fee payment lands — which fee it was is a branch condition | Registration fee at submission, Registration & allocation |
+| Payment failed | A transaction was attempted and failed | Both fee workflows |
+| Payment pending | A fee has been raised and is unpaid | Available |
+| Concession requested | A family applies for a scholarship or an adjustment | Concession assessment |
+| Concession decided | The concession is approved or rejected — and fires immediately when none was claimed, so the final bill is never blocked waiting for a decision nobody asked for | Final bill |
+| Applicant withdrawn | A registered or provisionally held applicant withdraws | Withdrawal & refund; releases a seat |
+| Seat released | An offer expires or is declined, a provisional hold lapses, **or a registered applicant withdraws** | Waitlist promotion |
 | Transfer request raised | A family asks to move campus | Transfer |
 
 ## Actions — do something
 
 | Node | Does | Used by |
 |---|---|---|
-| **Send email** | Sends a templated email to a family or a school team | all nine workflows |
-| **Create task** | Owned work with an assignee, a due date and a priority | seven |
-| **Notify team** | Tells a person or team something, with no accountability attached | three |
-| **Update status** | Moves the applicant along: sets an admissions field to a new value | four |
+| **Send email** | Sends a templated email to a family or a school team | all fifteen |
+| **Create task** | Owned work with an assignee, a due date and a priority | fourteen |
+| **Notify team** | Tells a person or team something, with no accountability attached | nine |
+| **Update status** | Moves the applicant along: sets an admissions field to a new value | thirteen |
 | **Allocate** | Assigns a house or a class section, by balancing or by matching a sibling | Enrolment |
-| **Adjust fee** *(specified, not built)* | Applies a concession — a percentage or a fixed amount off a named fee head, with an approval gate | Payment |
+| **Adjust fee** | Applies a concession — a percentage or a fixed amount off a named fee head, with an approval gate | Payment |
 
 `Adjust fee` is the only node that moves money. It is separate from `Update status` for the same
 reason `Allocate` is — it computes a figure rather than setting a known value — and it is the only
@@ -53,8 +65,10 @@ the same kind of reason — allocation is the system choosing, not the user sett
 | **Branch** | Splits the flow into **two or more** labelled paths. The branch names the field; each path carries its own operator and value. The path left blank is the fallback (→ D-03, D-17) |
 | **End** | Terminates a path. Every path ends in an End or in a task a human owns |
 
-Operators: `=` · `is not` · `is empty` · `is not empty`. A value is always picked from that field's
-own list, never typed (→ D-23).
+Operators: `=` · `is not` · `is empty` · `is not empty` on a status field, and `more than` ·
+`less than` on the three overdue day counts. The picker offers the family the chosen field accepts
+and no other. A status value is always picked from that field's own list, never typed (→ D-23,
+D-33).
 
 ## Delays — wait
 

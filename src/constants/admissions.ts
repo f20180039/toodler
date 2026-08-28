@@ -8,27 +8,38 @@
 import { DelayMode, DelayUnit } from '../types/flow'
 import {
   AcademicYear,
+  AdjustBasis,
+  AdjustKind,
+  AdjustValidity,
   AdmissionField,
   AllocateMethod,
   AllocateTarget,
   ApplicationStatus,
+  ConcessionStatus,
+  CreditSource,
   DecisionOutcome,
   DocumentStatus,
   DuesStatus,
   EnrolmentStatus,
+  FeeConcession,
+  FeeHead,
+  FeeStatus,
   Grade,
   House,
+  IntakeStatus,
   InterviewStatus,
   NotifyChannel,
   NotifyPriority,
   OfferStatus,
   Operator,
-  PaymentStatus,
+  ReentryRule,
+  RefundStatus,
   Role,
   SeatAvailability,
   TaskPriority,
   TransferStatus,
   TriggerEvent,
+  WorkflowState,
   type FieldValue,
 } from '../types/admissions'
 
@@ -37,6 +48,11 @@ import {
 export const TRIGGER_EVENT_OPTIONS: readonly TriggerEvent[] = Object.values(TriggerEvent)
 export const GRADE_OPTIONS: readonly Grade[] = Object.values(Grade)
 export const ACADEMIC_YEAR_OPTIONS: readonly AcademicYear[] = Object.values(AcademicYear)
+export const REENTRY_OPTIONS: readonly ReentryRule[] = Object.values(ReentryRule)
+
+/* ---- lifecycle ---------------------------------------------------------- */
+
+export const WORKFLOW_STATE_OPTIONS: readonly WorkflowState[] = Object.values(WorkflowState)
 
 /* ---- people ------------------------------------------------------------- */
 
@@ -67,11 +83,20 @@ export const ASSIGNEE_OPTIONS: readonly Role[] = [
   Role.AdmissionsOfficer,
   Role.Counsellor,
   Role.AdmissionsTeam,
+  Role.AdmissionsHead,
   Role.FinanceTeam,
   Role.DestinationOfficer,
   Role.RecordsTeam,
   Role.InterviewPanel,
   Role.Principal,
+]
+
+/** Who can be named on an Adjust fee approval gate: money leaving the school
+ *  needs a signature, and only these three carry it (→ D-25). */
+export const APPROVER_OPTIONS: readonly Role[] = [
+  Role.Principal,
+  Role.FinanceTeam,
+  Role.AdmissionsHead,
 ]
 
 /* ---- delay -------------------------------------------------------------- */
@@ -102,23 +127,74 @@ export const NOTIFY_PRIORITY_OPTIONS: readonly NotifyPriority[] = Object.values(
 
 /* ---- fields, conditions and their values -------------------------------- */
 
+/** Everything a branch can test. */
 export const ADMISSION_FIELD_OPTIONS: readonly AdmissionField[] = Object.values(AdmissionField)
-export const OPERATOR_OPTIONS: readonly Operator[] = Object.values(Operator)
+
+/** Fields that hold a number of days rather than a status. They are compared
+ *  with `more than` / `less than`, and nothing sets them — an overdue count is
+ *  derived from a deadline, not typed in (→ D-33). */
+export const NUMERIC_FIELDS: readonly AdmissionField[] = [
+  AdmissionField.RegistrationFeeOverdue,
+  AdmissionField.AdmissionFeeOverdue,
+  AdmissionField.TermFeeOverdue,
+]
+
+export function isNumericField(field: AdmissionField): boolean {
+  return NUMERIC_FIELDS.includes(field)
+}
+
+/** What an Update status node may set: every field except the derived day
+ *  counts. */
+export const STATUS_FIELD_OPTIONS: readonly AdmissionField[] = ADMISSION_FIELD_OPTIONS.filter(
+  (field) => !isNumericField(field),
+)
+
+const EQUALITY_OPERATORS: readonly Operator[] = [
+  Operator.Equals,
+  Operator.IsNot,
+  Operator.IsEmpty,
+  Operator.IsNotEmpty,
+]
+
+const NUMERIC_OPERATORS: readonly Operator[] = [Operator.MoreThan, Operator.LessThan]
+
+/** Two operator families in one picker, and only some fields accept the
+ *  numeric ones — so the editor offers what applies rather than disabling
+ *  half the list (→ D-33). */
+export function operatorsFor(field: AdmissionField): readonly Operator[] {
+  return isNumericField(field) ? NUMERIC_OPERATORS : EQUALITY_OPERATORS
+}
+
+export function isNumericOperator(operator: Operator): boolean {
+  return NUMERIC_OPERATORS.includes(operator)
+}
 
 /** Picking a field narrows the values. This is the whole argument for
  *  admissions-native fields over generic CRM properties: the options can be
- *  right by default instead of being free text. */
+ *  right by default instead of being free text.
+ *
+ *  The overdue fields carry no list: their value is a number of days. */
 export const FIELD_VALUES: Record<AdmissionField, readonly FieldValue[]> = {
   [AdmissionField.ApplicationStatus]: Object.values(ApplicationStatus),
   [AdmissionField.DocumentStatus]: Object.values(DocumentStatus),
   [AdmissionField.InterviewStatus]: Object.values(InterviewStatus),
   [AdmissionField.Decision]: Object.values(DecisionOutcome),
-  [AdmissionField.PaymentStatus]: Object.values(PaymentStatus),
+  [AdmissionField.OfferStatus]: Object.values(OfferStatus),
+  [AdmissionField.EnrolmentStatus]: Object.values(EnrolmentStatus),
+  [AdmissionField.IntakeStatus]: Object.values(IntakeStatus),
+  [AdmissionField.RegistrationFeeStatus]: Object.values(FeeStatus),
+  [AdmissionField.TokenFeeStatus]: Object.values(FeeStatus),
+  [AdmissionField.AdmissionFeeStatus]: Object.values(FeeStatus),
+  [AdmissionField.TermFeeStatus]: Object.values(FeeStatus),
+  [AdmissionField.RegistrationFeeOverdue]: [],
+  [AdmissionField.AdmissionFeeOverdue]: [],
+  [AdmissionField.TermFeeOverdue]: [],
+  [AdmissionField.RefundStatus]: Object.values(RefundStatus),
+  [AdmissionField.FeeConcession]: Object.values(FeeConcession),
+  [AdmissionField.ConcessionStatus]: Object.values(ConcessionStatus),
   [AdmissionField.DuesStatus]: Object.values(DuesStatus),
   [AdmissionField.SeatAvailability]: Object.values(SeatAvailability),
   [AdmissionField.TransferStatus]: Object.values(TransferStatus),
-  [AdmissionField.OfferStatus]: Object.values(OfferStatus),
-  [AdmissionField.EnrolmentStatus]: Object.values(EnrolmentStatus),
   [AdmissionField.House]: Object.values(House),
 }
 
@@ -150,3 +226,25 @@ export const HOUSE_COLOURS: Record<House, string> = {
   [House.Blue]: '#2563eb',
   [House.Green]: '#16a34a',
 }
+
+/* ---- fee adjustment ----------------------------------------------------- */
+
+export const ADJUST_KIND_SEGMENTS: readonly { value: AdjustKind; label: string }[] = [
+  { value: AdjustKind.Concession, label: 'Concession' },
+  { value: AdjustKind.Credit, label: 'Credit' },
+]
+
+/** Concession categories only — `None` is the absence of a claim, not
+ *  something to grant. */
+export const CONCESSION_OPTIONS: readonly FeeConcession[] = Object.values(FeeConcession).filter(
+  (concession) => concession !== FeeConcession.None,
+)
+
+export const CREDIT_SOURCE_OPTIONS: readonly CreditSource[] = Object.values(CreditSource)
+
+/** Token fee is absent by construction: a rule is only real if the product
+ *  enforces it (→ D-35). */
+export const FEE_HEAD_OPTIONS: readonly FeeHead[] = Object.values(FeeHead)
+
+export const ADJUST_BASIS_OPTIONS: readonly AdjustBasis[] = Object.values(AdjustBasis)
+export const ADJUST_VALIDITY_OPTIONS: readonly AdjustValidity[] = Object.values(AdjustValidity)

@@ -131,6 +131,12 @@ const glyphs: Record<string, ReactNode> = {
       <circle cx="15" cy="16" r="2.2" fill="var(--bg-surface)" />
     </>
   ),
+  rupee: (
+    <>
+      <path d="M7 4h10M7 8.5h10" />
+      <path d="M14.5 4c0 3-2.2 4.5-5 4.5H7l8 11.5" />
+    </>
+  ),
   users: (
     <>
       <circle cx="10" cy="8.5" r="3.5" />

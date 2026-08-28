@@ -3,38 +3,53 @@ import { summarise } from '../../utils/nodeSummary'
 import { formatOptionList, isFallbackPath, parseOptionList } from '../../utils/nodeView'
 import {
   ACADEMIC_YEAR_OPTIONS,
+  ADJUST_BASIS_OPTIONS,
+  ADJUST_KIND_SEGMENTS,
+  ADJUST_VALIDITY_OPTIONS,
   ADMISSION_FIELD_OPTIONS,
   ALLOCATE_METHOD_OPTIONS,
   ALLOCATE_TARGET_OPTIONS,
+  APPROVER_OPTIONS,
   ASSIGNEE_OPTIONS,
+  CONCESSION_OPTIONS,
+  CREDIT_SOURCE_OPTIONS,
   DEFAULT_HOUSES,
   DEFAULT_SECTIONS,
   DELAY_MODE_SEGMENTS,
   DELAY_UNIT_OPTIONS,
+  FEE_HEAD_OPTIONS,
   fieldValueOptionsWithBlank,
   fieldValues,
   GRADE_OPTIONS,
   HOUSE_COLOURS,
+  isNumericField,
   NOTIFY_CHANNEL_OPTIONS,
   NOTIFY_PRIORITY_OPTIONS,
-  OPERATOR_OPTIONS,
+  operatorsFor,
   RECIPIENT_OPTIONS,
+  REENTRY_OPTIONS,
   SENDER_OPTIONS,
+  STATUS_FIELD_OPTIONS,
   TASK_PRIORITY_OPTIONS,
   TRIGGER_EVENT_OPTIONS,
   WAIT_EVENT_OPTIONS,
 } from '../../constants/admissions'
 import {
+  AdjustBasis,
+  AdjustKind,
   AllocateMethod,
   AllocateTarget,
   Operator,
   type AdmissionField,
+  type FieldValue,
   type House,
+  type Role,
 } from '../../types/admissions'
 import {
   DelayMode,
   NodeKind,
   type AnyParams,
+  type ConditionValue as ConditionValueType,
   type EmailParams,
   type FlowNode,
   type NotifyParams,
@@ -115,6 +130,16 @@ export function ConfigPanel({
                 value={node.params.academicYear}
                 options={ACADEMIC_YEAR_OPTIONS}
                 onValueChange={(academicYear) => onParams({ academicYear })}
+              />
+            </Field>
+            <Field
+              label="Can an applicant enter again?"
+              hint="Once only is the safe default. Waitlist promotion needs Every time, because a released seat fires this trigger for the next family."
+            >
+              <Select
+                value={node.params.reentry}
+                options={REENTRY_OPTIONS}
+                onValueChange={(reentry) => onParams({ reentry })}
               />
             </Field>
           </>
@@ -282,10 +307,10 @@ export function ConfigPanel({
 
         {node.kind === NodeKind.Status && (
           <>
-            <Field label="Field">
+            <Field label="Field" hint="An overdue day count is derived, so nothing sets it">
               <Select
                 value={node.params.field}
-                options={ADMISSION_FIELD_OPTIONS}
+                options={STATUS_FIELD_OPTIONS}
                 onValueChange={(field) =>
                   /* Keep the value valid for the field that was just chosen. */
                   onParams({ field, value: fieldValues(field)[0] })
@@ -372,6 +397,104 @@ export function ConfigPanel({
           </>
         )}
 
+        {node.kind === NodeKind.AdjustFee && (
+          <>
+            <Field
+              label="Adjustment kind"
+              hint="One node, two arithmetics: a concession reduces what is owed, a credit deducts money already received."
+            >
+              <SegmentedControl<AdjustKind>
+                label="Adjustment kind"
+                value={node.params.kind}
+                segments={ADJUST_KIND_SEGMENTS}
+                onChange={(kind) => onParams({ kind })}
+              />
+            </Field>
+
+            {node.params.kind === AdjustKind.Concession ? (
+              <Field label="Concession" hint="Recorded on the applicant, so finance can report by category">
+                <Select
+                  value={node.params.concession}
+                  options={CONCESSION_OPTIONS}
+                  onValueChange={(concession) => onParams({ concession })}
+                />
+              </Field>
+            ) : (
+              <Field label="Credit from" hint="What the family has already paid">
+                <Select
+                  value={node.params.creditFrom}
+                  options={CREDIT_SOURCE_OPTIONS}
+                  onValueChange={(creditFrom) => onParams({ creditFrom })}
+                />
+              </Field>
+            )}
+
+            <Field label="Applies to" hint="The token fee is not offered: it is a deposit against a held seat, and it cannot be reduced.">
+              <Select
+                value={node.params.appliesTo}
+                options={FEE_HEAD_OPTIONS}
+                onValueChange={(appliesTo) => onParams({ appliesTo })}
+              />
+            </Field>
+
+            {node.params.kind === AdjustKind.Concession ? (
+              <>
+                <Field label="Adjustment">
+                  <Select
+                    value={node.params.basis}
+                    options={ADJUST_BASIS_OPTIONS}
+                    onValueChange={(basis) => onParams({ basis })}
+                  />
+                </Field>
+
+                <Field label="Value">
+                  <InlineFields>
+                    <NumberInput
+                      value={node.params.value}
+                      max={node.params.basis === AdjustBasis.Percentage ? 100 : 10000000}
+                      onValueChange={(value) => onParams({ value })}
+                    />
+                    <span style={{ alignSelf: 'center', color: 'var(--text-muted)' }}>
+                      {node.params.basis === AdjustBasis.Percentage ? 'per cent' : 'rupees'}
+                    </span>
+                  </InlineFields>
+                </Field>
+
+                <FieldGroup title="Approval">
+                  <Checkbox
+                    checked={node.params.approvalRequired}
+                    onCheckedChange={(approvalRequired) => onParams({ approvalRequired })}
+                    label="Hold until someone signs it off"
+                    hint="A concession is money leaving the school, so the workflow can wait for a named person."
+                  />
+                  {node.params.approvalRequired && (
+                    <Field label="Approved by">
+                      <Select<Role | ''>
+                        value={node.params.approver}
+                        options={['', ...APPROVER_OPTIONS]}
+                        onValueChange={(approver) => onParams({ approver })}
+                      />
+                    </Field>
+                  )}
+                </FieldGroup>
+
+                <Field label="Valid for" hint="A concession that silently persists across years is an audit problem">
+                  <Select
+                    value={node.params.validity}
+                    options={ADJUST_VALIDITY_OPTIONS}
+                    onValueChange={(validity) => onParams({ validity })}
+                  />
+                </Field>
+              </>
+            ) : (
+              <p className={styles.note}>
+                A credit needs no value and no approval — the amount is whatever the family already
+                paid, deducted rather than discounted.
+              </p>
+            )}
+          </>
+        )}
+
         {node.kind === NodeKind.Branch && (
           <>
             <Field
@@ -413,17 +536,17 @@ export function ConfigPanel({
                       />
                     </div>
                     <InlineFields>
+                      {/* Only the operators the chosen field accepts: `= Paid`
+                          is nonsense on a day count, `more than` on a status. */}
                       <Select
                         value={child.pathCondition?.operator ?? Operator.Equals}
-                        options={OPERATOR_OPTIONS}
+                        options={operatorsFor(node.params.field)}
                         onValueChange={(operator) => onUpdatePath(index, { operator })}
                       />
-                      {/* Every admission field has a known value list, so the
-                          value is always a pick, never free text. */}
-                      <Select
+                      <ConditionValue
+                        field={node.params.field}
                         value={child.pathCondition?.value ?? ''}
-                        options={fieldValueOptionsWithBlank(node.params.field)}
-                        onValueChange={(value) => onUpdatePath(index, { value })}
+                        onChange={(value) => onUpdatePath(index, { value })}
                       />
                     </InlineFields>
                     {isFallbackPath(child.pathCondition) && (
@@ -455,6 +578,44 @@ export function ConfigPanel({
         </div>
       )}
     </aside>
+  )
+}
+
+/** A status is picked from the field's own closed list; an overdue day count is
+ *  typed, because it is a number rather than one of a handful of values. Blank
+ *  means the fallback either way (→ D-17, D-23, D-33). */
+function ConditionValue({
+  field,
+  value,
+  onChange,
+}: {
+  field: AdmissionField
+  value: ConditionValueType
+  onChange: (value: ConditionValueType) => void
+}) {
+  if (!isNumericField(field)) {
+    return (
+      <Select
+        value={(value === '' ? '' : String(value)) as FieldValue | ''}
+        options={fieldValueOptionsWithBlank(field)}
+        onValueChange={onChange}
+      />
+    )
+  }
+
+  return (
+    <>
+      <TextInput
+        value={value === '' ? '' : String(value)}
+        placeholder="Blank = fallback"
+        onValueChange={(raw) => {
+          const trimmed = raw.trim()
+          const parsed = Number(trimmed)
+          onChange(trimmed === '' || Number.isNaN(parsed) ? '' : parsed)
+        }}
+      />
+      <span style={{ alignSelf: 'center', color: 'var(--text-muted)' }}>days</span>
+    </>
   )
 }
 
