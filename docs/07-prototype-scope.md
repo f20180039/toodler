@@ -1,59 +1,79 @@
 # 07 · Prototype scope
 
-**Answers:** what the prototype shows, what it only pretends to do, and what Round 3 has to settle.
+**Answers:** what the prototype does, what it deliberately does not, and what Round 3 has to settle.
 **Read after:** `06-decisions.md`.
 
-## Three screens
+## One screen
 
-**Workflow list** — the five workflows from `02` as rows: name, trigger, status, steps, last updated,
-created by. Search, filter by status and category, and a Create workflow button. Row actions:
-rename, duplicate, delete.
+Node types on the left, the diagram in the middle, the selected step's parameters on the right, and
+the journey stages across the top (→ D-24). There is no workflow list and no create-workflow wizard;
+the diagram is the deliverable.
 
-**Create workflow** — name, description, category (Admissions · Marketing · Enrolment), then
-*Add trigger*, which opens the builder.
+**Stage tabs** — Enquiry · Application · Review · Decision · Enrolment · Payment · Transfer. Where a
+stage holds more than one workflow, a picker beside the tabs switches between them and reads
+"1 of 2" (→ D-19). Edits survive switching stages; *Reset stage* restores a stage's original.
 
-**Builder** — node library on the left, canvas in the middle, configuration panel on the right
-(→ D-08). Header carries the workflow name, the Draft / Active / Paused state, an unsaved-changes
-indicator, the warning count and Save. Nodes are added by clicking a library entry or the
-`+ Add step` control at the end of any path (→ D-15). Each node shows its icon, type, title and
-configuration summary (→ D-07), and a `⚠` badge while incomplete (→ D-09).
+**Node types** — grouped Trigger / Actions / Logic / Delays, with the four nearest future nodes
+marked *Soon*. Clicking one attaches it to the selected step, and the panel header says what it will
+attach to. A branch and an End cannot be attach points: a branch's paths are edited on the paths
+themselves.
 
-Branches render both paths with labelled connectors, so which side is which is never ambiguous:
+**The diagram** — boxes and connectors. A step with two or more children fans out and is drawn side
+by side; branches draw two or more labelled paths with their conditions beneath. The `+` on any
+connector adds a step after it; the `+` on a step that already has children adds a parallel one; an
+End that heads a branch path carries a `+` above it, so a terminated path can still be extended.
+Each node prints its own configuration under its title (→ D-07) and shows a `⚠` badge while
+incomplete (→ D-09).
 
 ```
-              [ Branch ]
-          Payment status = Pending
-             /              \
-          Yes                No
-            |                 |
-      [ Email ]            [ End ]
-   Payment reminder
+                  [ Branch ]
+           Seat availability · 3 paths
+        /                |                \
+  Seat available     Waitlisted         No seat
+    = Available      = Waitlist        otherwise
+        |                |                 |
+  [ Update status ]   [ Email ]        [ Email ]
 ```
 
-## Present but not functional
+**Parameters** — per node type, live-updating the diagram. Specified field by field in `04`.
 
-Undo / redo, zoom controls, minimap, breadcrumb, duplicate, delete, and the Activate flow's review
-summary are rendered and reachable, because they are part of judging whether the screen is complete —
-but they do not carry real behaviour. Deferred nodes appear in the library greyed, labelled
-*Coming soon*.
+## What actually works
 
-## Hard out of scope
+Adding, renaming, configuring and deleting steps · adding and removing branch paths · undo and redo
+across every edit (⌘Z / ⇧⌘Z) · advisory validation with a warning count in the header · deep links:
+the open workflow and selected step live in the URL as `?flow=…&step=…` (→ D-22).
 
-No backend, database, API, authentication or persistence. No email is sent, no schedule runs, no
-workflow executes, no integration is real. All data is mock (→ D-16).
+Deleting a step splices what came after it back onto its parent, so a chain does not lose everything
+below the node you removed. Deleting a branch keeps its first path and discards the rest, rather than
+silently turning a decision into parallel steps.
+
+## Not built, and stated rather than hidden
+
+**Designed, deferred:** the Draft / Active / Paused lifecycle and the review-before-activation step
+(→ D-10) · re-entry control on the trigger (→ D-14) · a template library so a school never faces a
+blank canvas · per-workflow analytics.
+
+**Out of scope by the brief:** any execution. No backend, no database, no authentication, no
+scheduling, no email actually sent, no persistence — reload and the seed workflows return. All data
+is mock (→ D-16).
+
+**Consciously absent rather than faked:** zoom, minimap, pan controls and drag-and-drop. Earlier
+drafts rendered them as inert chrome; a control that looks real and does nothing costs more
+credibility in a demo than an honest absence (→ D-15).
 
 ## Open questions for the Round 3 scope lock
 
-1. **Multi-trigger** — do we lift the one-trigger constraint, and what are the dedupe rules if we do
+1. **Mid-flight state changes.** An applicant pays while sitting inside a five-day delay. Does the
+   workflow re-evaluate, or send the reminder anyway? The single sharpest execution question, and it
+   changes what the builder must let a user express.
+2. **Goal / exit criteria.** Should a workflow have a goal that removes an applicant the moment it is
+   met, instead of repeating the same branch twice? It would visibly simplify workflow 8.
+3. **Merging paths.** After a fan-out, paths never rejoin — the model is a tree, not a graph. "Wait
+   for both, then continue" needs a join node.
+4. **Where a transfer workflow runs** — source campus, destination, or the group (→ D-20).
+5. **Recipient resolution.** Which parent receives the email when an applicant has two guardians,
+   and what happens to twelve workflows when the assigned counsellor leaves (→ D-13).
+6. **Multi-trigger.** Do we lift the one-trigger constraint, and what are the dedupe rules if we do
    (→ D-02)?
-2. **Recipient resolution** — which parent receives the email when an applicant has two guardians,
-   and what happens when the assigned counsellor leaves (→ D-13)?
-3. **Mid-flight state changes** — an applicant pays while sitting inside a five-day delay. Does the
-   workflow re-evaluate, or continue and send the reminder anyway? This is the single biggest
-   execution-semantics question and it changes what the builder must let a user express.
-4. **Goal / exit criteria** — should a workflow have a goal that removes an applicant the moment it
-   is met, instead of every path ending in an explicit End?
-5. **Templates** — who authors email templates, and does the builder ship a starter library so a
-   school never faces a blank canvas?
-6. **WhatsApp** — Round 4 scope or later? It changes the node model more than any other addition,
-   because it brings opt-in state per family.
+7. **WhatsApp.** Round 4 or later? It changes the node model more than any other addition, because
+   it brings opt-in state per family.

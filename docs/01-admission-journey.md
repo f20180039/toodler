@@ -32,16 +32,29 @@ These eleven fields are the entire configuration vocabulary of the builder. Trig
 conditions, email personalisation tokens, recipient roles and task assignees all draw from this
 list rather than from a generic contact-property store (→ D-12).
 
-| Field | Example values | Used as |
+| Field | Values | Used as |
 |---|---|---|
 | Applicant | — | The subject of every workflow; each node acts on one applicant record |
-| Parent / Guardian | Primary, Secondary | Email recipient role, personalisation token |
-| Grade / Class | Grade 6 | Trigger filter, branch condition |
-| Academic year | 2026–27 | Trigger filter, and the re-entry key (→ D-14) |
-| Application status | Not started, Submitted, Under review, Shortlisted | Trigger event, branch condition |
-| Document status | Complete, Incomplete, Rejected | Branch condition |
-| Interview status | Scheduled, Completed, No show, Rescheduled | Trigger event, branch condition |
-| Decision | Offered, Waitlisted, Rejected | Branch condition |
-| Payment status | Pending, Partial, Paid | Branch condition |
-| Counsellor | A staff user | Task assignee, notification recipient, email sender |
-| Admission source | Website, Walk-in, Referral, Campaign | Trigger filter |
+| Parent / Guardian | — | Email recipient role |
+| Grade / Class | Nursery, LKG, UKG, Grade 1 … Grade 12 | Trigger filter |
+| Academic year | 2026–27, 2027–28 | Trigger filter, and the intended re-entry key (→ D-14) |
+| Application status | Submitted · Under review · Shortlisted · Needs a second look · Waitlisted · Rejected | Branch condition, status update |
+| Document status | Complete · Incomplete · Rejected | Branch condition, status update |
+| Interview status | Scheduled · Completed · No show · Rescheduled | Branch condition, status update |
+| Decision | Offered · Waitlisted · Rejected | Branch condition, status update |
+| Payment status | Pending · Partial · Paid | Branch condition, status update |
+| Offer status | Accepted · Declined · Expired | Branch condition — does an offer lapse |
+| Enrolment status | Pending · Confirmed · Withdrawn | Status update at enrolment |
+| Dues status | Cleared · Pending | Branch condition on a transfer |
+| Seat availability | Available · Waitlist · No seat | Branch condition on a transfer |
+| Transfer status | Requested · Approved · Waitlisted · Declined · Completed | Status update on a transfer |
+| House | Red · Yellow · Blue · Green | Allocation target, and a branch condition |
+| Roles | Parent/Guardian · Applicant · Admissions officer · Assigned counsellor · Class teacher · Finance team · Admissions team · Admissions head · Interview panel · Principal · Records team · Destination admissions officer · Destination coordinator · House captain | Email recipients, task assignees, notification targets |
+
+The last four field rows arrived with the transfer and decision workflows: a vocabulary designed
+around one stage does not survive contact with the next one, which is the argument for keeping it in
+one place rather than scattered through the screens.
+
+Every value above is a closed list, so a condition or a status update is always valid by
+construction — a typo cannot silently fail to match (→ D-23). **Admission source** is in the model on
+paper but not implemented; the trigger filters on grade and academic year only.

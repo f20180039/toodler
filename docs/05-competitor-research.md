@@ -17,23 +17,27 @@ numbers.
 | Capability | HubSpot | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle MVP** |
 |---|---|---|---|---|---|
 | Multiple entry triggers | Yes | Yes | Up to 3 (Standard+) | Typical | **No — one trigger** (→ D-02) |
-| Filters on the trigger | Yes | Yes (segment builder) | Up to 5 per trigger | Typical | **Yes** — grade, year, source |
+| Filters on the trigger | Yes | Yes (segment builder) | Up to 5 per trigger | Typical | **Yes** — grade and academic year |
 | Duration delay | Yes — "set amount of time" | Yes | Yes — "time delay" | Typical | **Yes** |
 | Wait until a date / date property | Yes — calendar date, date property | Yes — specific day/time, custom date field | Not a named rule | Typical | **Yes** |
-| Wait relative to a date ("24h before") | Via a date-property delay | Via date-based triggers and actions | — | Typical | **Yes — first class** (→ D-04) |
+| Wait relative to a date ("24h before") | Via a date-property delay | Via date-based triggers and actions | — | Typical | **No** — expressed as a duration from the trigger (→ D-04) |
 | Wait until an event or condition | Yes — "event occurrence" | Yes — "wait until conditions are met", with a time limit | Yes — "Wait for Trigger" | Partial | **Yes**, with a maximum wait |
 | Weekday / time-of-day / weekend control | Yes — "Business days only (Monday - Friday)", day-of-week and time-of-day delays | Date and time conditions | — | — | **Yes — exclude weekends** (→ D-05) |
 | Binary Yes / No branch | Yes — if/then, with a "None met" path | Yes — If/Else, Yes and No paths | Yes — conditional split, up to 5 conditions | Typical | **Yes** |
-| AND / OR inside one branch | Yes — if/then, up to 20 branches | Yes — segment builder | Multiple conditions per split | Typical | **Yes** |
-| N-way / value-based split | Yes — up to 250 branches on one property | Via nested If/Else | No | Partial | **Deferred** (→ D-03) |
-| Random / percentage split | Yes — Marketing Hub Pro+, needs ≈1,000 records | Yes | Yes — percentage and 50/50 | Rare | **Labelled Future** (→ D-06) |
+| AND / OR inside one branch | Yes — if/then, up to 20 branches | Yes — segment builder | Multiple conditions per split | Typical | **No** — one field per branch, one condition per path |
+| N-way / value-based split | Yes — up to 250 branches on one property | Via nested If/Else | No | Partial | **Yes** — two or more paths, each with its own condition (→ D-03) |
+| Random / percentage split | Yes — Marketing Hub Pro+, needs ≈1,000 records | Yes | Yes — percentage and 50/50 | Rare | **Not doing** — cohorts are too small to mean anything (→ D-06) |
 | Create an internal task | Yes — "Create task" | Yes — "Add a deal task" | No | Yes — counsellor follow-ups | **Yes** |
 | Internal notification | Yes — in-app, internal email, Slack | Partial | No | Typical | **Yes** |
-| Update a record field | Yes — "Edit record" | Yes | Yes — "Update contact" | Typical | **Yes** — status and tag |
-| Re-entry / re-enrolment control | Yes — off by default | Yes | Yes | Typical | **Yes** (→ D-14) |
-| Draft / Active / Paused states | Yes | Yes | Yes — Draft, Active, Paused | Typical | **Yes** (→ D-10) |
+| Update a record field | Yes — "Edit record" | Yes | Yes — "Update contact" | Typical | **Yes** — update status, and allocate house / section |
+| Re-entry / re-enrolment control | Yes — off by default | Yes | Yes | Typical | **Designed, not built** (→ D-14) |
+| Draft / Active / Paused states | Yes | Yes | Yes — Draft, Active, Paused | Typical | **Designed, not built** (→ D-10) |
 | SMS / WhatsApp | Yes / partial | Yes | SMS, with an approved programme | Yes — the primary channel in India | **Deferred** (→ D-16) |
 | Webhook / custom code | Yes | Yes | Yes | Varies | **Not doing** (→ D-16) |
+| Parallel steps from one node | Yes | Yes | Yes | Typical | **Yes** — drawn side by side |
+| Delivery retry on a message | Partial | Partial | — | Varies | **Yes** — attempts and interval (→ D-21) |
+| House / class allocation | No | No | No | Yes | **Yes** — balanced or sibling-matched (→ D-18) |
+| Linkable diagram (URL state) | Yes | Yes | Yes | Varies | **Yes** — `?flow=…&step=…` (→ D-22) |
 
 Three observations drove scope more than the feature counts:
 
@@ -48,22 +52,24 @@ Three observations drove scope more than the feature counts:
 
 ## Functionality we should provide
 
-**MVP — build now.** One filtered trigger from the full admissions event list · send email to a
-recipient *role* · create task · internal notification · update status · add tag · Yes/No branch with
-AND/OR conditions · five delay types with weekend exclusion · configuration summaries on every node ·
-advisory validation · Draft / Active / Paused with a review step before activation · workflow list
-with search, filter, duplicate and rename.
+**MVP — built.** One filtered trigger from nine admissions events · send email to a recipient
+*role*, with delivery retry · create task · notify team · update status · allocate house and class
+section · a branch with two or more labelled paths and an explicit fallback · three delay types with
+weekend exclusion · parallel steps drawn side by side · configuration summaries on every node ·
+advisory validation · undo and redo · linkable diagrams · nine workflows across the six journey
+stages plus inter-branch transfer.
 
-**Next — designed for, not built now.** WhatsApp and SMS, the channel parents actually reply on ·
-value-based split for routing by grade or counsellor · admissions actions (schedule interview,
-request documents, assign counsellor, send offer letter, send payment link) · academic-calendar
-awareness on delays, so vacations are excluded the way weekends are · per-workflow analytics ·
-a template library so schools do not start from a blank canvas.
+**Next — designed for, not built.** The Draft / Active / Paused lifecycle with a review step before
+activation, which is the highest-value gap (→ D-10) · re-entry control on the trigger (→ D-14) ·
+WhatsApp and SMS, the channel parents actually reply on · a template library so a school never starts
+from a blank canvas · academic-calendar awareness on delays, so vacations are excluded the way
+weekends are · waiting relative to a date field (→ D-04) · per-workflow analytics on the canvas.
 
 **Explicitly not doing.** Random / A/B split as an admissions feature — cohorts are too small for it
 to mean anything (→ D-06) · webhooks and custom code, wrong audience for a school administrator ·
-multi-trigger workflows until the execution semantics are settled (→ D-02) · any part of the
-execution engine, which the brief places out of scope (→ D-16).
+AND / OR across several fields in one branch, until a workflow needs it · multi-trigger workflows
+until the execution semantics are settled (→ D-02) · any part of the execution engine, which the
+brief places out of scope (→ D-16).
 
 ## Sources
 

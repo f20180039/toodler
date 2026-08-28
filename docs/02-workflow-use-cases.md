@@ -1,93 +1,139 @@
-# 02 · The five workflows
+# 02 · The workflows
 
-**Answers:** which workflows we chose to automate, how each one runs, and why each earns its place.
+**Answers:** which workflows we automate, how each runs, and why each earns its place.
 **Read after:** `01-admission-journey.md`.
 
-The brief supplies three example workflows and says they are not the final scope. We kept all three
-and added two — **Missing documents** and **Interview reminder** — because without them the product
-never has to answer two questions it cannot avoid in a real school: what happens on the *negative*
-path, and how do you wait relative to a scheduled date. Each workflow below is listed with the
-capability it forces into the node library; that is the selection criterion, not variety.
+Nine workflows across the six journey stages from the brief, plus one beyond them. The brief supplies
+three examples and says they are not the final scope; the rest were added because without them the
+product never has to answer a question a real school forces — what happens on the *negative* path,
+what happens when there are more than two outcomes, and who does the work that is not an email.
 
-## 1. New enquiry follow-up · *Enquiry → Application*
+A stage holds more than one workflow where a stage genuinely is more than one job (→ D-19).
 
-**Goal:** convert a new enquiry into a submitted application.
+| Stage | Workflow | Steps | Forces into the product |
+|---|---|---|---|
+| **Enquiry** | New enquiry follow-up | 8 | Nudge → wait → check → escalate to a human |
+| **Application** | Application acknowledgement | 9 | Parallel steps: the family *and* the school, at once |
+| **Review** | Application review & shortlisting | 10 | A three-way outcome |
+| **Review** | Missing documents reminder | 9 | Waiting on an event rather than a clock |
+| **Decision** | Decision & offer | 14 | A branch nested inside a branch path; an offer that expires |
+| **Decision** | Interview reminder | 8 | A fan-out to family and panel from one delay |
+| **Enrolment** | Enrolment confirmation | 9 | Allocation: the system choosing, not the user setting |
+| **Payment** | Payment reminder | 10 | An escalation ladder — same check, twice, harder |
+| **Transfer** | Inter-branch transfer request | 15 | Two campuses in one flow; the widest branch |
 
-**Trigger** Enquiry created → **Email** School introduction → **Delay** 3 days →
-**Branch** Application submitted? → **Yes:** End · **No:** **Email** Application reminder →
-**Delay** 4 days → **Task** Counsellor calls the parent
+## 1. Enquiry · New enquiry follow-up
 
-**Why this one:** it is the highest-volume workflow in any school and it establishes the core
-pattern — nudge, wait, check, escalate to a human. The final step being a *task* rather than a
-third email is the point: after two ignored emails, more email is not the answer.
+**Trigger** Enquiry submitted → **Email** School introduction → **Delay** 3 days →
+**Branch** *Has an application arrived?* → **Yes:** End · **No:** **Email** Application reminder →
+**Delay** 4 days → **Task** Call the parent
 
-## 2. Application acknowledgement and review · *Application → Review*
+The highest-volume workflow in any school, and it establishes the core pattern. The last step being a
+*task* rather than a third email is the point: after two ignored emails, more email is not the answer.
 
-**Goal:** confirm receipt, and make sure the application is actually picked up.
+## 2. Application · Application acknowledgement
 
-**Trigger** Application submitted → **Email** Application received (to parent) →
-**Task** Review application (to admissions team) → **Update status** Application status → Under
-review → **Delay** 2 days → **Branch** Application reviewed? → **Yes:** **Email** Next steps ·
-**No:** **Notification** Admissions head — application unreviewed for 2 days
+**Trigger** Application submitted → **two parallel paths**:
+**Email** Thank-you to the parent · and **Email** Notify the school official →
+**Task** Review the application → **Update status** Under review → **Delay** 2 days →
+**Branch** *Reviewed within 2 days?* → **Yes:** **Email** Next steps · **No:** **Notify** the
+admissions head, urgent
 
-**Why this one:** the only workflow whose *audience is the school*, not the family. It is what makes
-this a workflow builder rather than an email tool, and it is where `Update status` and internal
-notifications become necessary (→ D-11).
+The workflow the brief describes, and the only one whose second audience is the school rather than the
+family. The fan-out is what makes it a workflow builder rather than an email tool.
 
-## 3. Missing documents reminder · *Application → Review*
+## 3. Review · Application review & shortlisting
 
-**Goal:** chase incomplete document sets without a human tracking a spreadsheet.
+**Trigger** Documents submitted → **Task** Review the application → **Delay** 2 days →
+**Branch** *What did the review conclude?* → **Shortlisted:** status → Shortlisted → **Email** invite
+to interview · **Second look:** **Task** for the Principal · **Not eligible:** status → Rejected →
+**Email** regret
 
-**Trigger** Application submitted → **Branch** Documents complete? → **Yes:** End (continues to
-review) · **No:** **Add tag** Documents pending → **Email** Missing documents reminder →
-**Delay** Wait until documents submitted, up to 3 days → **Branch** Documents complete? →
-**Yes:** End · **No:** **Task** Counsellor follow-up call
+The first three-way branch. A review has three honest outcomes, and forcing them into yes/no would
+have produced a diagram that hides the middle one.
 
-**Why this one:** it forces the *wait-until-event* delay. A duration delay here would keep nagging a
-family who uploaded their documents an hour after the first email; waiting on the event stops the
-workflow the moment the problem is solved (→ D-04). It is also the first workflow that branches
-immediately at the top rather than after a message.
+## 4. Review · Missing documents reminder
 
-## 4. Interview / assessment reminder · *Decision*
+**Trigger** Application submitted → **Branch** *Are the documents complete?* →
+**Yes:** status → Under review → End · **No:** **Email** reminder →
+**Delay** until Documents submitted, max 3 days → **Branch** *Have they arrived?* →
+**Yes:** End · **No:** **Task** Call the parent
 
-**Goal:** get families to actually attend the slot they booked.
+Forces the wait-until-event delay. A duration delay would keep nagging a family who uploaded an hour
+after the first email; waiting on the event stops the moment the problem is solved.
 
-**Trigger** Interview scheduled → **Delay** Until 24 hours before the interview →
-**Email** Interview reminder (to parent) → **Notification** Interview panel — tomorrow's list →
-**Branch** Interview completed? → **Yes:** End (continues to decision) ·
-**No:** **Task** Reschedule with the parent
+## 5. Decision · Decision & offer
 
-**Why this one:** the only workflow that waits *backwards from a future date*. Marketing tools
-express this awkwardly; admissions needs it constantly — interviews, fee deadlines, term start,
-document cut-offs. This single requirement is why the delay node has five types instead of one.
+**Trigger** Interview completed → **Task** Panel records the decision →
+**Branch** *What did the panel decide?* →
+**Offered:** status → Offered → **Email** offer letter · and **Notify** the admissions head; then
+**Delay** 7 days → **Branch** *Was the offer accepted?* → **Yes:** End · **No:** **Task** call before
+the offer lapses ·
+**Waitlisted:** status → Waitlisted → **Email** waitlist letter ·
+**Not offered:** status → Rejected → **Email** regret
 
-## 5. Enrolment payment reminder · *Enrolment → Payment*
+The deepest flow: a branch inside a branch path, and an offer with an expiry. Offers expiring in
+silence is a real way schools lose accepted students.
 
-**Goal:** convert an accepted offer into a paid seat.
+## 6. Decision · Interview reminder
 
-**Trigger** Applicant enrolled → **Email** Payment instructions → **Delay** 5 days →
-**Branch** Payment completed? → **Yes:** End · **No:** **Email** Payment reminder →
-**Delay** 3 days (exclude weekends) → **Branch** Payment completed? → **Yes:** End ·
-**No:** **Task** Finance team follow-up
+**Trigger** Interview scheduled → **Delay** 24 hours → **two parallel paths**:
+**Email** reminder to the family — then **Branch** *Did they attend?* → **Yes:** status → Completed →
+End · **No:** **Task** reschedule — and **Notify** tomorrow's panel list
 
-**Why this one:** the longest workflow, and the one that proves the same branch can repeat at
-escalating intensity. It is also the most sensitive — money, to families who have already said yes —
-which is what drives the review-before-activation step (→ D-10).
+Note the delay: the reminder is a 24-hour duration from the moment the slot is booked, not "24 hours
+before the interview". That equivalence holds for same-week bookings and breaks for a slot booked
+months ahead (→ D-04).
 
-## Coverage matrix
+## 7. Enrolment · Enrolment confirmation
 
-Every node in `03` appears in at least one column below. That is the rule that decided the node
-library: nothing ships that no real workflow needs (→ D-01).
+**Trigger** Offer accepted → **Email** Welcome → **Update status** Enrolment confirmed →
+**Allocate** class section, balanced across A/B/C → **Allocate** house, matching a sibling →
+**three parallel paths**: **Email** class, house and joining details → End · **Notify** the class
+teacher · **Notify** the house captain
 
-| Node | W1 Enquiry | W2 Acknowledge | W3 Documents | W4 Interview | W5 Payment |
-|---|---|---|---|---|---|
-| Trigger | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Send email | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Delay — duration | ✔ | ✔ | — | — | ✔ |
-| Delay — until event | — | — | ✔ | — | — |
-| Delay — relative to date | — | — | — | ✔ | — |
-| Branch | ✔ | ✔ | ✔ ✔ | ✔ | ✔ ✔ |
-| Create task | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Send internal notification | — | ✔ | — | ✔ | — |
-| Update applicant status | — | ✔ | — | — | — |
-| Add tag | — | — | ✔ | — | — |
+Allocation replaced a manual "Allot class and section" task — a spreadsheet job. Balancing an intake
+evenly is exactly what software should do, and houses match a sibling because that is the convention
+schools actually follow (→ D-18).
+
+## 8. Payment · Payment reminder
+
+**Trigger** Applicant enrolled → **Email** payment instructions → **Delay** 5 days →
+**Branch** *Is the fee still pending?* → **No:** End ·
+**Yes:** **Email** reminder → **Delay** 3 days, skipping weekends → **Branch** *Still pending?* →
+**No:** End · **Yes:** **Task** finance follow-up call
+
+The same check twice at rising intensity. It is also the most sensitive workflow — money, to families
+who have already said yes — which is what drives the review-before-activation argument in D-10.
+
+## 9. Transfer · Inter-branch transfer request
+
+**Trigger** Transfer request raised → **Branch** *Are dues cleared at the current branch?* →
+**Pending:** **Email** clear the dues → **Task** finance reconcile ·
+**Cleared:** **Task** verify the seat at the destination →
+**Branch** *Seat at the destination branch?* →
+**Seat available:** status → Approved → **Email** transfer confirmed → **Task** move the records ·
+and **Notify** the destination coordinator ·
+**Waitlisted:** **Email** waitlist → **Delay** 7 days → **Task** review the waitlist ·
+**No seat:** **Email** no seat → **Task** counsel the family
+
+Not an admissions-funnel workflow: the student already belongs to the group and is moving between
+campuses. Same primitives, different goal — a clean handover rather than a conversion (→ D-20).
+
+## Node coverage
+
+Every node in `03` is used by at least one workflow above. That is the rule that decided the library:
+nothing ships that no real workflow needs (→ D-01).
+
+| Node | Workflows using it |
+|---|---|
+| Trigger | all nine |
+| Send email | all nine |
+| Delay — duration | 1, 2, 3, 5, 6, 8, 9 |
+| Delay — until event | 4 |
+| Branch | all except 7 |
+| Create task | 1, 3, 4, 5, 8, 9 |
+| Notify team | 2, 5, 6, 7, 9 |
+| Update status | 3, 4, 5, 6, 7, 9 |
+| Allocate | 7 |
+| Parallel paths (fan-out) | 2, 5, 6, 7, 9 |
