@@ -9,9 +9,11 @@ Node types on the left, the diagram in the middle, the selected step's parameter
 the journey stages across the top (→ D-24). There is no workflow list and no create-workflow wizard;
 the diagram is the deliverable.
 
-**Stage tabs** — Enquiry · Application · Review · Decision · Enrolment · Payment · Transfer. Where a
-stage holds more than one workflow, a picker beside the tabs switches between them and reads
-"1 of 2" (→ D-19). Edits survive switching stages; *Reset stage* restores a stage's original.
+**Stage tabs** — Enquiry · Application · Review · Decision · **Registration** · Enrolment · Payment ·
+Transfer. Where a stage holds more than one workflow, a picker beside the tabs switches between them
+and reads "1 of 3" (→ D-19). Beside the picker sits the workflow's lifecycle state — Draft, Active or
+Paused (→ D-10). Edits survive switching stages; *Reset stage* restores a stage's original diagram
+and its original state.
 
 **Node types** — grouped Trigger / Actions / Logic / Delays, with the four nearest future nodes
 marked *Soon*. Clicking one attaches it to the selected step, and the panel header says what it will
@@ -35,13 +37,30 @@ incomplete (→ D-09).
   [ Update status ]   [ Email ]        [ Email ]
 ```
 
+A branch tests one field, so a status test and a day-count test are two branches stacked — which is
+exactly how "overdue, and by more than three days" reads on the canvas (→ D-33):
+
+```
+        [ Branch ] Registration fee status · 3 paths
+                          |
+                       Overdue
+                      otherwise
+                          |
+        [ Branch ] Registration fee overdue · 2 paths
+             /                              \
+   More than 3 days                       Not yet
+   more than 3 days                      otherwise
+```
+
 **Parameters** — per node type, live-updating the diagram. Specified field by field in `04`.
 
 ## What actually works
 
 Adding, renaming, configuring and deleting steps · adding and removing branch paths · undo and redo
-across every edit (⌘Z / ⇧⌘Z) · advisory validation with a warning count in the header · deep links:
-the open workflow and selected step live in the URL as `?flow=…&step=…` (→ D-22).
+across every edit (⌘Z / ⇧⌘Z) · advisory validation with a warning count in the header · moving a
+workflow between Draft, Active and Paused, where activating opens a review of everything the workflow
+will send, create and change, and an incomplete step blocks it (→ D-09, D-10) · deep links: the open
+workflow and selected step live in the URL as `?flow=…&step=…` (→ D-22).
 
 Deleting a step splices what came after it back onto its parent, so a chain does not lose everything
 below the node you removed. Deleting a branch keeps its first path and discards the rest, rather than
@@ -49,14 +68,15 @@ silently turning a decision into parallel steps.
 
 ## Not built, and stated rather than hidden
 
-**Designed, deferred:** the **Adjust fee** node and the fee-concession workflow — specified field by
-field in `04` and `02`, not yet on screen (→ D-25, D-26) · the Draft / Active / Paused lifecycle and
-the review-before-activation step (→ D-10) · re-entry control on the trigger (→ D-14) · a template library so a school never faces a
-blank canvas · per-workflow analytics.
-
 **Out of scope by the brief:** any execution. No backend, no database, no authentication, no
-scheduling, no email actually sent, no persistence — reload and the seed workflows return. All data
-is mock (→ D-16).
+scheduling, no email actually sent, no persistence — reload and the seed workflows return, in their
+seeded states. All data is mock (→ D-16). The lifecycle and the re-entry rule are therefore
+*statements of intent*: the states move and the review is real, but nothing runs behind them.
+
+**Missing at the level above a single workflow.** There is no workflow list, so "which of my fifteen
+are live?" has no screen (→ D-24), and validation is per node, so nothing checks a *journey* — a
+school can configure two fee checkpoints that contradict each other and the product cannot warn about
+it (→ D-30).
 
 **Consciously absent rather than faked:** zoom, minimap, pan controls and drag-and-drop. Earlier
 drafts rendered them as inert chrome; a control that looks real and does nothing costs more
@@ -64,10 +84,10 @@ credibility in a demo than an honest absence (→ D-15).
 
 ## Open questions for the Round 3 scope lock
 
-1. **Two workflows on one trigger.** The fee-concession flow and the payment reminder both start at
-   *Applicant enrolled*, and the adjusted amount has to land before the reminder computes what is
-   outstanding. Ordering between workflows sharing a trigger is undefined in this model — sequence
-   them, let one wait on the other, or merge them?
+1. **Who keeps *Intake status* current?** Waitlist promotion is guarded by Open / Full / Closed
+   (→ D-29), but nothing in the product moves a seat count across zero or notices a deadline passing.
+   A field a human maintains is exactly the manual step automation should remove — does the platform
+   own it, or does a workflow?
 2. **Mid-flight state changes.** An applicant pays while sitting inside a five-day delay. Does the
    workflow re-evaluate, or send the reminder anyway? The single sharpest execution question, and it
    changes what the builder must let a user express.
@@ -77,8 +97,17 @@ credibility in a demo than an honest absence (→ D-15).
    for both, then continue" needs a join node.
 5. **Where a transfer workflow runs** — source campus, destination, or the group (→ D-20).
 6. **Recipient resolution.** Which parent receives the email when an applicant has two guardians,
-   and what happens to twelve workflows when the assigned counsellor leaves (→ D-13).
+   and what happens to fifteen workflows when the assigned counsellor leaves (→ D-13).
 7. **Multi-trigger.** Do we lift the one-trigger constraint, and what are the dedupe rules if we do
    (→ D-02)?
-8. **WhatsApp.** Round 4 or later? It changes the node model more than any other addition, because
+8. **Can a journey be reviewed as a whole?** Fee checkpoints are configurable per workflow (→ D-30),
+   so nothing stops a school setting up two that contradict each other. Validation is per node today;
+   a journey-level check is the missing piece.
+9. **Who owns the fee ledger?** The Adjust fee node states that a token is credited and a concession
+   applied, but the arithmetic lives in a finance system this product does not own. Where is the
+   boundary — does the workflow instruct the ledger, read it, or both (→ D-37)?
+10. **How does a token get waived?** Excluding it from concessions (→ D-35) leaves a hardship case at
+   acceptance with no expressible answer. A separate waive act with its own approval, or out of
+   system?
+11. **WhatsApp.** Round 4 or later? It changes the node model more than any other addition, because
    it brings opt-in state per family.
