@@ -59,6 +59,12 @@ export const kindMeta: Record<NodeKind, NodeMeta> = {
     group: NodeGroup.Logic,
     hint: 'Split into two or more labelled paths',
   },
+  [NodeKind.Parallel]: {
+    label: 'Parallel',
+    icon: 'parallel',
+    group: NodeGroup.Logic,
+    hint: 'Run two or more steps at once',
+  },
   [NodeKind.Delay]: {
     label: 'Delay',
     icon: 'clock',

@@ -563,6 +563,44 @@ export function ConfigPanel({
           </>
         )}
 
+        {node.kind === NodeKind.Parallel && (
+          <>
+            <p className={styles.note}>
+              Every path below runs — all of them, not one of them. Use a Branch instead when the
+              applicant should take only one.
+            </p>
+
+            <FieldGroup
+              title={`Steps at once (${node.children.length})`}
+              trailing={
+                <Button size="sm" variant="ghost" iconLeft="plus" onClick={onAddPath}>
+                  Add path
+                </Button>
+              }
+            >
+              {node.children.map((child, index) => (
+                <div className={styles.path} key={child.id}>
+                  <div className={styles.pathHead}>
+                    <span className={styles.pathIndex}>{index + 1}</span>
+                    <TextInput
+                      value={child.pathLabel ?? ''}
+                      placeholder="What this path is for"
+                      onValueChange={(label) => onUpdatePath(index, { label })}
+                    />
+                    <IconButton
+                      icon="trash"
+                      label={`Remove ${child.pathLabel ?? 'path'}`}
+                      size="sm"
+                      disabled={node.children.length <= 2}
+                      onClick={() => onRemovePath(index)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </FieldGroup>
+          </>
+        )}
+
         {node.kind === NodeKind.End && (
           <p className={styles.note}>
             This path stops here. Nothing further is sent for an applicant who reaches it.

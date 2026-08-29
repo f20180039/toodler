@@ -125,7 +125,23 @@ off the total payable`.
 **Warns when:** the value is zero, a percentage is above 100, or approval is required with no
 approver named. A credit needs no approval and no value — the amount is whatever was received.
 
+## Parallel
+
+| Field | Options | Notes |
+|---|---|---|
+| Paths | Two or more. Each has a name only | Add path · remove path (minimum two) |
+
+No condition, no field, nothing to choose: every path below a Parallel runs. That is the whole
+difference from a Branch, and it is why the two are separate nodes rather than a mode on one
+(→ D-39).
+
+**Canvas summary:** `3 steps at once`
+**Warns when:** it is down to a single path — one path is not parallel to anything.
+
 ## Branch
+
+Routes the applicant down **exactly one** path. For steps that should all happen, use a Parallel
+(→ D-39).
 
 | Field | Options | Notes |
 |---|---|---|

@@ -20,12 +20,13 @@ marked *Soon*. Clicking one attaches it to the selected step, and the panel head
 attach to. A branch and an End cannot be attach points: a branch's paths are edited on the paths
 themselves.
 
-**The diagram** — boxes and connectors. A step with two or more children fans out and is drawn side
-by side; branches draw two or more labelled paths with their conditions beneath. The `+` on any
-connector adds a step after it; the `+` on a step that already has children adds a parallel one; an
-End that heads a branch path carries a `+` above it, so a terminated path can still be extended.
-Each node prints its own configuration under its title (→ D-07) and shows a `⚠` badge while
-incomplete (→ D-09).
+**The diagram** — boxes and connectors. Branch and Parallel fan out and are drawn side by side; a
+branch prints each path's condition beneath its label, a parallel prints only the label, because
+every path runs. **Every connector carries a `+` that inserts a step at that point**, including the
+connector above an End, so a terminated path can still be extended. A step with nothing after it
+also carries a `+` below it, which appends. Nothing else can gain a second child: a fan-out is
+always a Branch or a Parallel saying which it means (→ D-39). Each node prints its own configuration
+under its title (→ D-07) and shows a `⚠` badge while incomplete (→ D-09).
 
 ```
                   [ Branch ]

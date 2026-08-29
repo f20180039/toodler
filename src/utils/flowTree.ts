@@ -22,6 +22,7 @@ import {
   TriggerEvent,
 } from '../types/admissions'
 import {
+  CONTAINER_KINDS,
   DelayMode,
   DelayUnit,
   NodeKind,
@@ -29,6 +30,10 @@ import {
   type FlowNode,
   type PathPatch,
 } from '../types/flow'
+
+function isContainer(node: FlowNode): boolean {
+  return CONTAINER_KINDS.includes(node.kind)
+}
 
 let sequence = 0
 
@@ -174,6 +179,17 @@ export function makeNode(kind: NodeKind): FlowNode {
         ],
         params: { field: AdmissionField.DocumentStatus },
       }
+    case NodeKind.Parallel:
+      return {
+        id,
+        kind,
+        title: 'At the same time',
+        children: [
+          { ...makeNode(NodeKind.End), title: 'End', pathLabel: 'Step 1' },
+          { ...makeNode(NodeKind.End), title: 'End', pathLabel: 'Step 2' },
+        ],
+        params: {},
+      }
     case NodeKind.End:
       return { id, kind, title: 'End', children: [], params: {} }
   }
@@ -211,9 +227,36 @@ export function updateParams(root: FlowNode, id: string, patch: Partial<AnyParam
   )
 }
 
+/** Appends, and only where appending cannot fan the node out. A node that
+ *  already has a successor must be spliced into instead - see `addAfter` -
+ *  because a second child would make it a fork that says nothing about whether
+ *  it meant "one of these" or "all of these". */
 export function addChild(root: FlowNode, parentId: string, kind: NodeKind): FlowNode {
+  const parent = findNode(root, parentId)
+  if (!parent || parent.children.length > 0) return root
   const child = makeNode(kind)
   return replace(root, parentId, (node) => ({ ...node, children: [...node.children, child] }))
+}
+
+/** What the `+` under a node does: append if nothing follows, otherwise splice
+ *  into the chain. This is the whole fix for "inserting a step in the middle
+ *  forked instead of going in the middle". */
+export function addAfter(
+  root: FlowNode,
+  nodeId: string,
+  kind: NodeKind,
+): { tree: FlowNode; addedId: string } {
+  const node = findNode(root, nodeId)
+  if (node && node.children.length > 0) {
+    const { tree, insertedId } = insertBefore(root, node.children[0].id, kind)
+    return { tree, addedId: insertedId }
+  }
+  const child = makeNode(kind)
+  const tree = replace(root, nodeId, (current) => ({
+    ...current,
+    children: [...current.children, child],
+  }))
+  return { tree, addedId: child.id }
 }
 
 /** Inserts a step immediately above `targetId`, pushing it (and everything
@@ -229,37 +272,76 @@ export function insertBefore(
   function walk(node: FlowNode): FlowNode {
     return {
       ...node,
-      children: node.children.map((child) => {
-        if (child.id !== targetId) return walk(child)
-        /* The path label belongs to whichever node now heads the path. */
-        return {
-          ...inserted,
-          pathLabel: child.pathLabel,
-          children: [{ ...child, pathLabel: undefined }],
-        }
-      }),
+      children: node.children.map((child) =>
+        child.id === targetId ? displace(inserted, child) : walk(child),
+      ),
     } as FlowNode
   }
 
   return { tree: walk(root), insertedId: inserted.id }
 }
 
+/** Puts `inserted` where `child` was, with `child` below it.
+ *
+ *  Two things have to move with the position. The path's label *and* its
+ *  condition belong to whichever node now heads the path - carrying only the
+ *  label silently dropped the condition, turning a configured path into a
+ *  fallback. And a container cannot arrive with one path: it keeps its own
+ *  slots, the displaced chain becoming the first of them. */
+function displace(inserted: FlowNode, child: FlowNode): FlowNode {
+  const head = {
+    ...inserted,
+    pathLabel: child.pathLabel,
+    pathCondition: child.pathCondition,
+  } as FlowNode
+  const moved = { ...child, pathLabel: undefined, pathCondition: undefined } as FlowNode
+
+  if (!isContainer(inserted)) return { ...head, children: [moved] } as FlowNode
+
+  const [firstSlot, ...rest] = inserted.children
+  return {
+    ...head,
+    children: [
+      { ...moved, pathLabel: firstSlot?.pathLabel, pathCondition: firstSlot?.pathCondition },
+      ...rest,
+    ],
+  } as FlowNode
+}
+
 /** Deleting a step splices what came after it back onto its parent, so a chain
- *  does not lose everything below the node you removed. Deleting a *branch*
- *  keeps the Yes path and discards the No path - the alternative (promoting
- *  both) would silently turn a decision into two parallel steps. */
+ *  does not lose everything below the node you removed. Deleting a *container*
+ *  keeps its first path and discards the rest - the alternative, promoting them
+ *  all, would silently turn a decision into parallel steps, or parallel steps
+ *  into a decision.
+ *
+ *  A path never disappears by emptying. Deleting the only step on one of a
+ *  container's paths leaves a fresh End holding that path open, because a
+ *  container with one path is not a decision and not a fan-out - and losing a
+ *  whole branch by deleting a single End is not what anyone meant. */
 export function deleteNode(root: FlowNode, id: string): FlowNode {
   function prune(node: FlowNode): FlowNode {
     const children = node.children.flatMap((child) => {
       if (child.id !== id) return [prune(child)]
-      const survivors =
-        child.kind === NodeKind.Branch ? child.children.slice(0, 1) : child.children
-      return survivors.map((survivor, index) => ({
-        ...survivor,
-        pathLabel: index === 0 ? child.pathLabel : survivor.pathLabel,
-      }))
+
+      const survivors = isContainer(child) ? child.children.slice(0, 1) : child.children
+
+      if (survivors.length === 0 && isContainer(node)) {
+        return [
+          {
+            ...makeNode(NodeKind.End),
+            pathLabel: child.pathLabel,
+            pathCondition: child.pathCondition,
+          },
+        ]
+      }
+
+      return survivors.map((survivor, index) =>
+        index === 0
+          ? { ...survivor, pathLabel: child.pathLabel, pathCondition: child.pathCondition }
+          : survivor,
+      )
     })
-    return { ...node, children }
+    return { ...node, children } as FlowNode
   }
   return prune(root)
 }
@@ -267,16 +349,19 @@ export function deleteNode(root: FlowNode, id: string): FlowNode {
 /** A branch can have as many paths as the school needs - route by seat
  *  availability, by destination campus, by fee plan. Two paths is just the
  *  common case, not the limit. */
-export function addPath(root: FlowNode, branchId: string): { tree: FlowNode; addedId: string } {
+export function addPath(root: FlowNode, containerId: string): { tree: FlowNode; addedId: string } {
   const added = makeNode(NodeKind.End)
-  const tree = replace(root, branchId, (node) => ({
+  const tree = replace(root, containerId, (node) => ({
     ...node,
     children: [
       ...node.children,
       {
         ...added,
         pathLabel: `Path ${node.children.length + 1}`,
-        pathCondition: { operator: Operator.Equals, value: '' },
+        /* A Parallel runs every path, so there is nothing to test. */
+        ...(node.kind === NodeKind.Branch
+          ? { pathCondition: { operator: Operator.Equals, value: '' as const } }
+          : {}),
       },
     ],
   }))
