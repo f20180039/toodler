@@ -40,6 +40,7 @@ export enum NodeKind {
   Allocate = 'allocate',
   AdjustFee = 'adjust-fee',
   Branch = 'branch',
+  Parallel = 'parallel',
   End = 'end',
 }
 
@@ -110,6 +111,12 @@ export interface NotifyParams {
   priority: NotifyPriority
   retry: Retry
 }
+
+/** The two container kinds mean opposite things, which is why a fan-out has to
+ *  be one of them and never an accident: a **Branch** sends one applicant down
+ *  *one* path, a **Parallel** runs *all* of them. A node with two or more
+ *  children is always one of these, and each always has at least two. */
+export const CONTAINER_KINDS: readonly NodeKind[] = [NodeKind.Branch, NodeKind.Parallel]
 
 /** A branch checks one field and routes down one of its paths. The condition
  *  that selects a path lives on the path itself (see `pathCondition`), which is
@@ -211,6 +218,7 @@ export type FlowNode = NodeBase &
     | { kind: NodeKind.Allocate; params: AllocateParams }
     | { kind: NodeKind.AdjustFee; params: AdjustFeeParams }
     | { kind: NodeKind.Branch; params: BranchParams }
+    | { kind: NodeKind.Parallel; params: Record<string, never> }
     | { kind: NodeKind.End; params: Record<string, never> }
   )
 

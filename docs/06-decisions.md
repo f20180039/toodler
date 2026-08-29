@@ -4,7 +4,7 @@
 **Read after:** anything that cross-referenced a `→ D-nn`.
 
 Every entry has the same shape: options, choice, why, trade-off. The trade-off line is not
-decoration — each choice gives something up. Eight entries carry a **Revised** line: the build, or a
+decoration — each choice gives something up. Nine entries carry a **Revised** line: the build, or a
 later requirement, contradicted the original call, and the change of mind is recorded rather than
 quietly edited out.
 
@@ -466,3 +466,25 @@ would be the most dangerous fake in it.
 **Trade-off** a manual step in a flow that is otherwise automatic, and the refund's timeliness now
 depends on someone clearing a task queue. The email to the family is what makes the delay visible
 rather than silent.
+
+### D-39 · A fan-out is always a Branch or a Parallel, never an accident
+**Options** let any node take a second child, and read the fan-out as parallel · a dedicated Parallel
+node, with every other node limited to one successor · allow only Branch to fan out.
+**Choice** two container kinds — **Branch** routes down one path, **Parallel** runs all of them — and
+nothing else may have more than one child. Each always has at least two.
+**Why** the first option was what shipped, and it had a defect that made the case on its own:
+inserting a step into a linear chain appended it as a sibling, so asking for *A → new → B* produced
+*A → (B, new)*. Every `+` called the same append, and there was no way to say "in the middle". The
+deeper problem is that the resulting shape carried no meaning: two children under an Email node
+might be a deliberate fan-out or a mis-click, and the diagram could not tell you which. Naming the
+two containers makes the tree self-describing — a node with two children below it always states
+whether it meant *one of these* or *all of these*. Restricting fan-out to Branch alone was rejected
+because it deletes a capability rather than relocating it: five workflows send to the family *and*
+the school, and a branch means the applicant takes one path, not both.
+**Trade-off** one more node type to learn, and a two-step edit where there used to be one — adding a
+parallel step now means adding a Parallel and then filling its paths. That is the cost of the shape
+meaning something. Two smaller bugs fell out of the same fix: inserting a container left it with a
+single path, and inserting above a branch path carried the path's label but dropped its condition,
+silently turning a configured path into the fallback.
+**Revised** this reverses the original model, in which any node could fan out and `03` listed
+"parallel paths" as a property of the canvas rather than a node.

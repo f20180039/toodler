@@ -16,7 +16,7 @@ import { WORKFLOW_STATE_OPTIONS } from '../constants/admissions'
 import { WorkflowStage, WorkflowState, type AdmissionField } from '../types/admissions'
 import { nodeWarning } from '../utils/nodeSummary'
 import {
-  addChild,
+  addAfter,
   addPath,
   collectWarnings,
   countNodes,
@@ -157,13 +157,13 @@ export function FlowBuilderPage() {
     if (first) openFlow(first.id)
   }
 
+  /* Appends when nothing follows, splices when something does. It never fans a
+     node out: a fan-out has to be a Parallel or a Branch saying which it means. */
   function handleAdd(parentId: string, kind: NodeKind) {
-    const next = addChild(root, parentId, kind)
-    commit(next)
+    const { tree, addedId } = addAfter(root, parentId, kind)
+    commit(tree)
     /* Select what was just added, so its parameters are immediately editable. */
-    const parent = findNode(next, parentId)
-    const added = parent?.children[parent.children.length - 1]
-    if (added) setSelectedId(added.id)
+    setSelectedId(addedId)
   }
 
   function handleInsertBefore(targetId: string, kind: NodeKind) {

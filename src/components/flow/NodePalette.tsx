@@ -1,4 +1,4 @@
-import { NodeGroup, NodeKind, type FlowNode } from '../../types/flow'
+import { CONTAINER_KINDS, NodeGroup, NodeKind, type FlowNode } from '../../types/flow'
 import { groupLabels, kindMeta, kindsInGroup } from '../../utils/nodeMeta'
 import { isAttachable } from '../../utils/nodeView'
 import { NodeGlyph } from './NodeGlyph'
@@ -25,20 +25,21 @@ export function NodePalette({ selected, onAdd }: PaletteProps) {
   /* A branch's paths are edited on the paths themselves, and nothing runs after
      an End - so neither can be an attach point. */
   const attachable = isAttachable(selected)
-  const parallel = attachable && selected.children.length > 0
+  /* Something already follows, so a new step goes *into* the chain. */
+  const splices = attachable && selected.children.length > 0
 
   return (
     <aside className={styles.panel} aria-label="Node types">
       <div className={styles.header}>
         <div className={styles.title}>Node types</div>
         <div className={styles.hint}>
-          {selected.kind === NodeKind.Branch ? (
-            <>Select a step on the Yes or No path to add to it</>
+          {CONTAINER_KINDS.includes(selected.kind) ? (
+            <>Select a step on one of its paths to add to it</>
           ) : selected.kind === NodeKind.End ? (
-            <>Nothing runs after an End — use the + above it</>
+            <>Nothing runs after an End — use the + on the connector above it</>
           ) : (
             <>
-              {parallel ? 'Adds alongside the steps after ' : 'Adds after '}
+              {splices ? 'Inserts after ' : 'Adds after '}
               <span className={styles.target}>{selected.title}</span>
             </>
           )}

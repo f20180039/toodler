@@ -45,11 +45,11 @@ One screen, three columns, fifteen seed workflows.
 - **Node types (left)** — the vocabulary a flow is built from: Trigger, Send email, Create task,
   Notify team, Update status, Allocate, Adjust fee, Branch, Delay, End, plus the deferred ones
   marked *Soon*. Clicking one attaches it to the selected step.
-- **Diagram (middle)** — the flow as connected boxes. A step with two or more children fans out and
-  is drawn side by side, which is how "email the parent **and** the admissions officer" is
-  expressed. A branch draws two or more labelled paths, each printing its own condition. The `+` on
-  any connector adds a step after it; clicking `+` on a step that already has children adds a
-  parallel one.
+- **Diagram (middle)** — the flow as connected boxes. Two node types fan out, and they mean opposite
+  things: a **Branch** sends the applicant down one path, a **Parallel** runs all of them — which is
+  how "email the parent **and** the admissions officer" is expressed. Nothing else can have a second
+  child. Every connector carries a `+` that inserts a step at that point; a step with nothing after
+  it also has one below that appends.
 - **Parameters (right)** — the selected step's configuration. The trigger picks its event, a grade
   and year filter, and how often one applicant may re-enter. Email has recipient / subject / sender
   plus a **retry** block. Delay switches between a duration, an event to wait for (with a give-up
@@ -77,7 +77,7 @@ src/
   data/flows.ts          the fifteen seed workflows
   constants/admissions   the option lists every panel renders from
   hooks/useFlowLocation  the open workflow and selected step, in the URL
-  utils/flowTree         add / rename / update / delete on the tree
+  utils/flowTree         add / rename / update / delete on the tree (+ its test)
   utils/nodeMeta         node kind → icon, label, group, hint
   utils/nodeSummary      the line each node prints, and its warning
   utils/nodeView         pure view helpers: conditions, paths, stages

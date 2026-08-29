@@ -14,20 +14,20 @@ builder expresses that by which trigger the workflow hangs off rather than by a 
 | Stage | Workflow | Steps | Forces into the product |
 |---|---|---|---|
 | **Enquiry** | New enquiry follow-up | 8 | Nudge → wait → check → escalate to a human |
-| **Application** | Application acknowledgement | 9 | Parallel steps: the family *and* the school, at once |
+| **Application** | Application acknowledgement | 10 | Parallel steps: the family *and* the school, at once |
 | **Application** | Registration fee at submission | 13 | A fee **before** the decision — the GIIS pattern |
 | **Review** | Application review & shortlisting | 10 | A three-way outcome |
 | **Review** | Missing documents reminder | 9 | Waiting on an event rather than a clock |
-| **Decision** | Decision & offer *(revised)* | 16 | A branch nested inside a branch path; an offer that expires |
-| **Decision** | Interview reminder | 8 | A fan-out to family and panel from one delay |
+| **Decision** | Decision & offer *(revised)* | 17 | A branch nested inside a branch path; an offer that expires |
+| **Decision** | Interview reminder | 9 | A fan-out to family and panel from one delay |
 | **Registration** | Token fee & seat hold | 17 | A small non-negotiable deposit converts an intention into a commitment |
 | **Registration** | Final bill & payment | 16 | Concession applied, token credited, then the real number |
-| **Enrolment** | Enrolment & allocation *(revised)* | 10 | Registration triggered by payment, not by acceptance |
+| **Enrolment** | Enrolment & allocation *(revised)* | 11 | Registration triggered by payment, not by acceptance |
 | **Decision** | Waitlist promotion | 14 | A released seat backfilled before the intake closes |
 | **Payment** | Term fee reminder *(revised)* | 10 | An escalation ladder — same check, twice, harder |
 | **Payment** | Concession application & assessment | 17 | The window between the token and the final bill |
 | **Enrolment** | Withdrawal & refund | 9 | Token retained, the rest refunded, seat released |
-| **Transfer** | Inter-branch transfer request | 15 | Two campuses in one flow; the widest branch |
+| **Transfer** | Inter-branch transfer request | 16 | Two campuses in one flow; the widest branch |
 
 ## 1. Enquiry · New enquiry follow-up
 
@@ -309,7 +309,7 @@ workflows rather than asserted.
 | Allocate | 10 |
 | Adjust fee | 9 (credit), 13 (concession) |
 | End | all except 2, 14 and 15 |
-| Parallel paths (fan-out) | 2, 6, 7, 10, 15 |
+| Parallel | 2, 6, 7, 10, 15 |
 
 *Delay — until a date* is the one mode no workflow needs. It ships anyway, because a fixed fee cut-off
 is a real configuration and the mode costs nothing once the other two exist (→ D-04).

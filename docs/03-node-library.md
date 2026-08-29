@@ -62,8 +62,13 @@ the same kind of reason — allocation is the system choosing, not the user sett
 
 | Node | Does |
 |---|---|
-| **Branch** | Splits the flow into **two or more** labelled paths. The branch names the field; each path carries its own operator and value. The path left blank is the fallback (→ D-03, D-17) |
+| **Branch** | Routes down **one** of two or more labelled paths. The branch names the field; each path carries its own operator and value. The path left blank is the fallback (→ D-03, D-17) |
+| **Parallel** | Runs **all** of two or more paths at once — the family *and* the school, together. Paths carry a label and no condition, because nothing is being chosen (→ D-39) |
 | **End** | Terminates a path. Every path ends in an End or in a task a human owns |
+
+Branch and Parallel are the only nodes that may have more than one child, and each always has at
+least two. That is what makes a fan-out readable: a node with two children below it always says
+whether it meant *one of these* or *all of these* (→ D-39).
 
 Operators: `=` · `is not` · `is empty` · `is not empty` on a status field, and `more than` ·
 `less than` on the three overdue day counts. The picker offers the family the chosen field accepts

@@ -3,7 +3,7 @@
 
 import { Operator, WorkflowStage, type AdmissionField } from '../types/admissions'
 import { isNumericOperator } from '../constants/admissions'
-import { NodeKind, type Flow, type FlowNode, type PathCondition } from '../types/flow'
+import { CONTAINER_KINDS, NodeKind, type Flow, type FlowNode, type PathCondition } from '../types/flow'
 
 export type PathTone = 'yes' | 'no' | 'other'
 
@@ -52,34 +52,38 @@ export function describeCondition(
   return `${field} ${formatCondition(condition)}`
 }
 
-/** The heading shown above the node picker. Adding to a node that already has
- *  children creates a parallel step, and the wording has to say so. */
+/** The heading shown above the node picker. Every insertion point now says
+ *  where the step lands, because the one that used to fan the node out said
+ *  "parallel" and did it silently. */
 export function addStepHeading(node: FlowNode, mode: 'after' | 'before'): string {
-  if (mode === 'before') return 'Add a step before the end of this path'
-  if (node.children.length > 0) return 'Add a parallel step — runs alongside'
+  if (mode === 'before') return `Insert a step above ${node.title}`
   return `Add a step after ${node.title}`
 }
 
-export function addStepTooltip(node: FlowNode, mode: 'after' | 'before'): string {
-  if (mode === 'before') return 'Add a step before the end'
-  return node.children.length > 0 ? 'Add a parallel step' : 'Add a step'
+export function addStepTooltip(mode: 'after' | 'before'): string {
+  return mode === 'before' ? 'Insert a step here' : 'Add a step'
 }
 
-/** An End node only needs its own control when it heads a branch path;
- *  anywhere else the step above already offers the same insertion point. */
-export function canInsertAbove(node: FlowNode, parentKind: NodeKind | undefined): boolean {
-  return node.kind === NodeKind.End && parentKind === NodeKind.Branch
-}
-
-/** A branch owns exactly the labelled paths it has, so it must not gain an
- *  unlabelled child; steps are added on the paths themselves. */
+/** The `+` under a node, which appends. It is offered only where appending
+ *  cannot fan the node out: everywhere else the connector below it carries an
+ *  insert control instead. Nothing runs after an End, and a container's paths
+ *  are managed on the paths themselves. */
 export function canAddAfter(node: FlowNode): boolean {
-  return node.kind !== NodeKind.End && node.kind !== NodeKind.Branch
+  return node.kind !== NodeKind.End && !isContainer(node) && node.children.length === 0
 }
 
-/** Whether a node can be the attach point for the palette. */
+export function isContainer(node: FlowNode): boolean {
+  return CONTAINER_KINDS.includes(node.kind)
+}
+
+/** Whether the palette can add relative to this node.
+ *
+ *  Wider than `canAddAfter`, and deliberately so: a node with a successor has
+ *  no `+` of its own — the connector below it carries one — but the palette can
+ *  still add there, because adding now splices instead of forking. Nothing can
+ *  follow an End, and a container's paths are managed on the paths themselves. */
 export function isAttachable(node: FlowNode): boolean {
-  return canAddAfter(node)
+  return node.kind !== NodeKind.End && !isContainer(node)
 }
 
 /* ---- option pools (the allocate node's comma-separated field) ------------ */

@@ -33,10 +33,22 @@ import {
   WorkflowStage,
   WorkflowState,
 } from '../types/admissions'
-import { DelayMode, DelayUnit, NodeKind, type Flow } from '../types/flow'
+import { DelayMode, DelayUnit, NodeKind, type Flow, type FlowNode } from '../types/flow'
 
 const retry = { enabled: true, attempts: 2, intervalHours: 24 }
 const noRetry = { enabled: false, attempts: 1, intervalHours: 6 }
+
+/** Every step below this one runs — all of them, not one of them.
+ *
+ *  A fan-out has to say which it means, so it is always a Parallel or a Branch
+ *  and never an ordinary node that happens to have two children. */
+const parallel = (id: string, title: string, children: FlowNode[]): FlowNode => ({
+  id,
+  kind: NodeKind.Parallel,
+  title,
+  params: {},
+  children,
+})
 
 /** One complete diagram per stage of the admission journey. Every path ends
  *  somewhere deliberate - either an End node or a task a human picks up -
@@ -157,6 +169,7 @@ export const flows: Flow[] = [
       title: 'Application submitted',
       params: { event: TriggerEvent.ApplicationSubmitted, grade: Grade.Grade6, academicYear: AcademicYear.Y2026, reentry: ReentryRule.Once },
       children: [
+        parallel('a-parallel', 'The family and the school, at once', [
         {
           id: 'a-email-parent',
           kind: NodeKind.Email,
@@ -249,6 +262,7 @@ export const flows: Flow[] = [
             },
           ],
         },
+              ]),
       ],
     },
   },
@@ -639,6 +653,7 @@ export const flows: Flow[] = [
                   pathCondition: { operator: Operator.Equals, value: DecisionOutcome.Offered },
                   params: { field: AdmissionField.Decision, value: DecisionOutcome.Offered },
                   children: [
+                    parallel('dc-parallel', 'Tell the family and the head', [
                     {
                       id: 'dc-email-offer',
                       kind: NodeKind.Email,
@@ -733,6 +748,7 @@ export const flows: Flow[] = [
                       },
                       children: [],
                     },
+                                      ]),
                   ],
                 },
                 {
@@ -813,6 +829,7 @@ export const flows: Flow[] = [
             date: '',
           },
           children: [
+            parallel('i-parallel', 'Remind the family, brief the panel', [
             {
               id: 'i-email',
               kind: NodeKind.Email,
@@ -865,6 +882,7 @@ export const flows: Flow[] = [
               },
               children: [],
             },
+                      ]),
           ],
         },
       ],
@@ -1468,6 +1486,7 @@ export const flows: Flow[] = [
                         value: '',
                       },
                       children: [
+                        parallel('en-parallel', 'Tell the family, the teacher and the house', [
                         {
                           id: 'en-email-joining',
                           kind: NodeKind.Email,
@@ -1506,6 +1525,7 @@ export const flows: Flow[] = [
                           },
                           children: [],
                         },
+                                              ]),
                       ],
                     },
                   ],
@@ -2005,6 +2025,7 @@ export const flows: Flow[] = [
                       pathCondition: { operator: Operator.Equals, value: SeatAvailability.Available },
                       params: { field: AdmissionField.TransferStatus, value: TransferStatus.Approved },
                       children: [
+                        parallel('t-parallel', 'Confirm, move records, tell the destination', [
                         {
                           id: 't-email-confirm',
                           kind: NodeKind.Email,
@@ -2041,6 +2062,7 @@ export const flows: Flow[] = [
                           },
                           children: [],
                         },
+                                              ]),
                       ],
                     },
                     {

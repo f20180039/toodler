@@ -5,7 +5,6 @@ import {
   addStepHeading,
   addStepTooltip,
   canAddAfter,
-  canInsertAbove,
   formatCondition,
   pathTone,
   type PathTone,
@@ -40,28 +39,13 @@ export function FlowCanvas({ root, ...handlers }: CanvasHandlers & { root: FlowN
   )
 }
 
-function Subtree({
-  node,
-  parentKind,
-  ...handlers
-}: CanvasHandlers & { node: FlowNode; parentKind?: NodeKind }) {
+function Subtree({ node, ...handlers }: CanvasHandlers & { node: FlowNode }) {
   const { selectedId, onSelect, onAdd, onInsertBefore, onDelete } = handlers
   const hasChildren = node.children.length > 0
-  const showInsertAbove = canInsertAbove(node, parentKind)
   const showAddAfter = canAddAfter(node)
 
   return (
     <div className={styles.subtree}>
-      {/* An End node cannot have anything after it, so its control inserts
-          above instead - otherwise a Yes/No path that already terminates
-          could never be extended. */}
-      {showInsertAbove && (
-        <>
-          <AddMenu node={node} mode="before" onPick={(kind) => onInsertBefore(node.id, kind)} />
-          <span className={styles.stem} />
-        </>
-      )}
-
       <NodeCard
         node={node}
         selected={node.id === selectedId}
@@ -97,15 +81,24 @@ function Subtree({
                         {child.pathLabel}
                       </span>
                       {/* With more than two paths the label alone is not enough
-                          to tell you why this path was taken. */}
-                      {node.children.length > 2 && (
+                          to tell you why this path was taken. A Parallel runs
+                          every path, so there is no "why" to print. */}
+                      {node.kind === NodeKind.Branch && node.children.length > 2 && (
                         <span className={styles.pathCond}>
                           {formatCondition(child.pathCondition)}
                         </span>
                       )}
                     </span>
                   )}
-                  <Subtree node={child} parentKind={node.kind} {...handlers} />
+                  {/* Every connector carries its own insert point, so a step
+                      goes *into* the chain rather than beside it. */}
+                  <AddMenu
+                    node={child}
+                    mode="before"
+                    onPick={(kind) => onInsertBefore(child.id, kind)}
+                  />
+                  <span className={styles.stem} />
+                  <Subtree node={child} {...handlers} />
                 </div>
               )
             })}
@@ -219,7 +212,7 @@ function AddMenu({
           className={[styles.plus, open ? styles.plusOpen : ''].filter(Boolean).join(' ')}
           onClick={toggle}
           aria-label={heading}
-          title={addStepTooltip(node, mode)}
+          title={addStepTooltip(mode)}
         >
           <Icon name="plus" size={14} />
         </button>

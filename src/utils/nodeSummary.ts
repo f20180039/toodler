@@ -53,6 +53,9 @@ export function summarise(node: FlowNode): string {
       return `${node.params.field} · ${node.children.length} paths`
     }
 
+    case NodeKind.Parallel:
+      return `${node.children.length} steps at once`
+
     case NodeKind.End:
       return 'This path stops here'
   }
@@ -121,6 +124,10 @@ export function nodeWarning(node: FlowNode): string | undefined {
       if (node.params.approvalRequired && !node.params.approver) return 'Name the approver'
       return undefined
     }
+
+    case NodeKind.Parallel:
+      /* One path is not parallel to anything. */
+      return node.children.length < 2 ? 'Add a second step to run alongside' : undefined
 
     case NodeKind.Delay:
       return node.params.mode === DelayMode.Duration && !node.params.amount
