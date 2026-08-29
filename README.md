@@ -15,6 +15,20 @@ npm run build      # typecheck + production build
 npm run typecheck
 ```
 
+## Deploy
+
+Hosted on Render as a static site, configured by [`render.yaml`](render.yaml) — a Blueprint rather
+than dashboard settings, so what is serving the demo is in the diff.
+
+```bash
+npm ci && npm run build   # exactly what Render runs; output in dist/
+npm run preview           # serve that build locally before pushing
+```
+
+There is no server: `dist/` is static files, which is the honest shape for a prototype that executes
+nothing. The Blueprint's `buildFilter` limits rebuilds to files that affect the bundle, so once real
+backend and frontend code lands in this repo, working on it will not redeploy the prototype.
+
 ## What it does
 
 One screen, three columns, fifteen seed workflows.
