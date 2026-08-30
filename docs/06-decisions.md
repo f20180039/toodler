@@ -6,8 +6,8 @@
 Every entry has the same shape: options, choice, why, trade-off. The trade-off line is not
 decoration. Each choice gives something up.
 
-Nine entries carry a **Revised** line. In each of those, the build or a later requirement
-contradicted the original call. The change of mind is recorded rather than quietly edited out.
+Each entry describes the decision as it stands. Where a call was later reversed, the entry states
+the current one rather than the history behind it.
 
 ### D-01 · Group nodes by function, not by admission stage
 **Options** a flat palette · grouped by journey stage · grouped by function.
@@ -32,17 +32,13 @@ because the trigger is already filter-based.
 branch.
 **Choice** one branch node with any number of labelled paths. The field is chosen once on the branch.
 The condition that selects a path lives on the path itself.
-**Why** the first five workflows were all yes/no checks on state, so binary looked sufficient. The
-transfer case broke that immediately. A seat request is *available / waitlist / no seat*, and forcing
-three outcomes into nested yes/no branches produces a diagram nobody can read.
+**Why** a binary branch cannot express a real outcome. A seat request is *available / waitlist / no
+seat*, and forcing three outcomes into nested yes/no branches produces a diagram nobody can read.
 Putting the condition on the path rather than the node is what makes two paths and six paths the same
-mechanism.
-**Trade-off** there is more to configure per branch. The reader also has to look at the connectors
-rather than the node to see why a path was taken, so with three or more paths the canvas prints each
+mechanism. D-17 covers where the unmatched go.
+**Trade-off** there is more to configure per branch. The reader also has to look at the connectors,
+rather than the node, to see why a path was taken. With three or more paths the canvas prints each
 path's condition under its label.
-**Revised** this reverses an earlier decision to defer N-way splitting. Binary was a guess made
-before a use case that needed more than two outcomes. See D-17 for the fallback rule that came with
-it.
 
 ### D-04 · Three delay types, not five
 **Options** one duration delay · duration plus until-date · the five in the original plan.
@@ -50,14 +46,12 @@ it.
 event**, with a give-up limit. **Until a date**.
 **Why** duration and until-an-event carry every workflow in `02`, and until-a-date covers a fixed fee
 cut-off. The two that were cut are the two nothing needed. Time-of-day is a refinement of duration.
-Relative-to-a-date-field turned out to be expressible another way: "24 hours before the interview" is
-a 24-hour duration from the *Interview scheduled* trigger, because that trigger fires when the slot
-is booked rather than when it happens.
+Relative-to-a-date-field can be said another way. "24 hours before the interview" is a 24-hour
+duration from the *Interview scheduled* trigger, because that trigger fires when the slot is booked
+rather than when it happens.
 **Trade-off** the interview reminder now leans on that equivalence, and it breaks the day a school
 books a slot months ahead. A genuine gap, and the clearest argument for adding the relative delay
 next.
-**Revised** the original entry claimed five types and called relative-to-date first class. The
-prototype ships three. Saying so is better than demoing a claim the screen contradicts.
 
 ### D-05 · Weekend exclusion on delays
 **Options** ignore calendars · exclude weekends · full academic-calendar awareness.
@@ -75,9 +69,8 @@ records for its percentage split to distribute evenly, so a split test here meas
 a fee-instruction email across variants is a bad idea regardless. Once the prototype narrowed to
 admissions flows, a greyed-out marketing node read as noise rather than ambition.
 **Trade-off** the brief mentions marketing workflows, and a marketing-led school running campaigns to
-a large enquiry list will want it. It belongs in the Next list in `05`, not in the palette.
-**Revised** previously "show it, labelled Future". The palette's Later section now lists only
-admissions-shaped nodes.
+a large enquiry list will want it. It belongs in the Next list in `05`, not in the palette. The
+palette's Later section lists only admissions-shaped nodes.
 
 ### D-07 · Nodes print their configuration, never "Configured"
 **Options** generic node labels · a summary string per node type.
@@ -117,8 +110,6 @@ it creates and what it changes, which is only possible because every node prints
 **Trade-off** lifecycle normally lives on a workflow *list*, and D-24 removed the list, so the control
 sits on the builder header instead. That works for one workflow at a time. It says nothing about
 which of the fifteen are live, so a list-level view is still missing.
-**Revised** twice. The original entry read as though the states were implemented. The second said
-they were designed but not built. They are now built, on the builder screen rather than on a list.
 
 ### D-11 · Task and internal notification are separate nodes
 **Options** one "notify someone" node · two nodes.
@@ -149,18 +140,14 @@ guardians? Listed as an open question in `07`.
 ### D-14 · Re-entry is a setting on the trigger
 **Options** always re-enter · never re-enter · a re-entry setting on the trigger.
 **Choice** the setting: **once only** by default, **once per academic year**, or **every time**.
-**Why** applicants re-apply the following year and families enquire again for a sibling. The failure
-mode of always-re-enter is duplicate reminders to a family that already paid.
-It was cut from an earlier build, on the grounds that re-entry is a run-time rule with nothing
-observable behind it in a prototype that executes nothing. D-28 changed that. Waitlist promotion works
-by re-firing its own trigger, and without *every time* the loop runs once and stops. A control that is
-load-bearing for a workflow on screen is worth having on screen.
+**Why** applicants re-apply the following year, and families enquire again for a sibling. The
+failure mode of always-re-enter is duplicate reminders to a family that already paid.
+The setting is also load-bearing, not a refinement. Waitlist promotion works by re-firing its own
+trigger, and without *every time* that loop runs once and stops (→ D-28). It is the one workflow
+that ships set to *Every time*.
 **Trade-off** nothing here enforces the rule, so the prototype states the intent rather than
 demonstrating it. The dedupe question behind it, what counts as the same applicant across two
 academic years, is left for Round 3 (→ D-02).
-**Revised** twice. First described as part of the trigger configuration, then as designed but not
-built. It is now on the trigger panel, and waitlist promotion is the one workflow that ships set to
-*Every time*.
 
 ### D-15 · Click-to-add in the prototype, not real drag-and-drop
 **Options** a full drag-and-drop canvas · click-to-add with rendered connectors.
@@ -257,16 +244,16 @@ trigger.
 
 ### D-23 · Every condition value is a pick, never free text
 **Options** free-text values · a closed list per field.
-**Choice** each admissions field carries its own list of values, and the editor offers only those.
-**Why** this is the payoff of the field vocabulary in `01`. Because the product knows Term fee status
-is Not applicable / Pending / Paid / Failed / Overdue, the condition editor can be right by default
-rather than inviting a typo that silently never matches.
+**Choice** each admissions *status* field carries its own list of values, and the editor offers only
+those. The three overdue day counts are the exception: they hold a number, compared with `more than`
+and `less than` (→ D-33).
+**Why** this is the payoff of the field vocabulary in `01`. The product already knows that Term fee
+status is Not applicable, Pending, Paid, Failed or Overdue. So the condition editor can be right by
+default, instead of inviting a typo that silently never matches.
 It also removed a real defect. The branch editor had a free-text fallback input that could never be
 reached, because every field has a list.
 **Trade-off** a school with a stage the vocabulary lacks is stuck until the list is extended, so a
 custom-field escape hatch is needed eventually.
-**Revised** the rule holds for *status* fields, which is what it was written about. Overdue day counts
-are numbers, compared with `more than` / `less than` (→ D-33).
 
 ### D-24 · One screen, not a product shell
 **Options** the full SaaS shell, with product nav, workflow list, create-workflow screen and builder ·
@@ -278,15 +265,20 @@ and configuration. A list screen, a create wizard and a product nav demonstrate 
 consume the reviewer's attention. The diagram is the deliverable.
 **Trade-off** it costs the templates idea. It also means the prototype cannot show how a school finds
 a workflow in the first place, or answers "which of my fifteen are live?" at a glance.
-The lifecycle was the third casualty and has since been recovered. It sits on the builder header
-instead of on a list (→ D-10), which works for one workflow at a time and not for the portfolio.
+The lifecycle sits on the builder header instead of on a list (→ D-10). That works for one workflow
+at a time, and not for the portfolio.
 
 ### D-25 · Fee adjustment is its own node, and it can require approval
 **Options** treat a concession as a status value and let finance apply the money by hand · a
 percentage field on the payment email · a dedicated Adjust fee node.
-**Choice** an Adjust fee node. It carries the concession category, the fee head it applies to, a
-percentage *or* a fixed amount, an optional approval gate naming who signs it off, and how long it
-holds.
+**Choice** an Adjust fee node, carrying five things:
+
+- the concession category
+- the fee head it applies to
+- a percentage *or* a fixed amount
+- an optional approval gate, naming who signs it off
+- how long it holds
+
 **Why** this is the only node that moves money, and three details make it more than a discount field.
 
 It names the **fee head**, because a 50% staff concession on tuition is not 50% off transport. A node
@@ -325,16 +317,16 @@ and register on payment · take the fee before issuing the offer.
 becomes **Confirmed**, and the class section and house are allotted, only when *Payment received*
 fires.
 **Why** an accepted offer is an intention, and families do back out. Registering on acceptance makes
-the records claim a seat is taken when it is not, and every downstream act compounds that: a class
-list with a name that never joins, a seat the system believes is gone.
+the records claim a seat is taken when it is not, and everything downstream compounds that. A class
+list carries a name that never joins. A seat the school could sell looks gone.
 Behind payment, the only committed students are the ones who paid. Unpicking a lapse costs nothing,
 because nothing was allotted.
+The principle is *do not allot a seat until the gating fee is paid*, not *payment always precedes
+registration*. Which fee gates enrolment, and where it sits in the journey, is the school's choice
+(→ D-30).
 **Trade-off** an applicant now sits in a state that is neither rejected nor enrolled, and reporting
 has to understand it. "How many students do we have" gets two answers, provisional and confirmed. It
 also splits one workflow into two, on two different triggers.
-**Revised** the principle is *do not allot a seat until the gating fee is paid*, not *payment always
-precedes registration*. Which fee gates enrolment, and where it sits in the journey, is the school's
-choice (→ D-30).
 
 ### D-28 · A released seat is an event, and the waitlist loop is that event firing again
 **Options** a loop node · a scheduled job that sweeps the waitlist · treat each released seat as an
@@ -343,9 +335,9 @@ event that starts the promotion workflow.
 provisional hold lapses, **or when a registered student withdraws**.
 **Why** each promotion is a separate journey for a different applicant, not an iteration. An event is
 therefore the right shape, and no loop construct is needed.
-A seat freed in July is worth backfilling exactly as much as one freed in March, and a promoted family
-clears the same admission-fee checkpoint as everyone else rather than being fast-tracked.
-The loop closes on itself. The promotion workflow calls the next waitlisted family, and if that offer
+A seat freed in July is worth backfilling exactly as much as one freed in March. A promoted family
+clears the same admission-fee checkpoint as everyone else, rather than being fast-tracked.
+The loop closes on itself. The promotion workflow calls the next waitlisted family. If that offer
 expires it sets *Offer status → Expired*, which releases the seat again, which re-triggers the
 workflow for the family after them.
 **Trade-off** it only works if an applicant pool can enter the workflow more than once. That makes
@@ -392,10 +384,7 @@ fee releases a seat. An unpaid term fee is a finance matter for a student alread
 *Not applicable* is what lets a school switch a checkpoint off without deleting the workflow.
 **Trade-off** four fields to keep straight instead of one, and a fifth arrives the day a school adds a
 transport or hostel fee. This wants a fee *type* dimension eventually, rather than a field per fee.
-The generic `Payment status` is superseded and gone, so the workflows that read it had to be
-re-pointed.
-**Revised** the entry originally named three statuses. The token fee (→ D-34) made it four, which is
-the trade-off arriving sooner than the entry expected.
+There is no generic `Payment status`.
 
 ### D-32 · A failed payment is not an unpaid one
 **Options** one "not paid" condition · separate *Failed* from *Pending* · a retry count.
@@ -411,8 +400,7 @@ the distinction that decides whether "try again" is even useful advice.
 **Choice** add `more than` and `less than`, valid on the three overdue day-count fields.
 **Why** "overdue by more than three days" is how schools reason, and an *Overdue* status loses the
 number. Three days late and thirty days late need different responses.
-This reverses an earlier judgement (→ D-29) that numeric operators were a poor trade for a single
-branch. There are now several.
+Several branches need it, in the registration-fee and final-bill workflows.
 **Trade-off** two operator families in one picker, and only some fields accept the numeric ones, so
 the editor has to offer the right set per field. It also opens the door to arithmetic conditions the
 product has no appetite for.
@@ -440,8 +428,8 @@ reduce.
 **Why** the rule is only real if the product enforces it. A handbook line gets negotiated away on a
 phone call. An option that does not exist does not. The vocabulary is where policy gets encoded
 (→ D-23).
-**Trade-off** a school with a genuine reason to waive a token, such as a hardship case at the point of
-acceptance, has no way to express it and must handle it outside the system. That is a real
+**Trade-off** some schools have a genuine reason to waive a token, such as a hardship case at
+acceptance. They cannot express it here, and must handle it outside the system. That is a real
 limitation. The honest fix is a separate "waive token" act with its own approval, not a concession.
 
 ### D-36 · The concession window sits between the token and the final bill
@@ -486,21 +474,15 @@ rather than silent.
 node, with every other node limited to one successor · allow only Branch to fan out.
 **Choice** two container kinds. **Branch** routes down one path, **Parallel** runs all of them, and
 nothing else may have more than one child. Each always has at least two.
-**Why** the first option was what shipped, and it had a defect that made the case on its own.
-Inserting a step into a linear chain appended it as a sibling, so asking for *A → new → B* produced
-*A → (B, new)*. Every `+` called the same append, and there was no way to say "in the middle".
-The deeper problem is that the resulting shape carried no meaning. Two children under an Email node
-might be a deliberate fan-out or a mis-click, and the diagram could not tell you which. Naming the two
-containers makes the tree self-describing: a node with two children below it always states whether it
-meant *one of these* or *all of these*.
-Restricting fan-out to Branch alone was rejected. It deletes a capability rather than relocating it.
-Five workflows send to the family *and* the school, and a branch means the applicant takes one path,
-not both.
-**Trade-off** one more node type to learn, and a two-step edit where there used to be one. Adding a
-parallel step now means adding a Parallel and then filling its paths. That is the cost of the shape
-meaning something.
-Two smaller bugs fell out of the same fix. Inserting a container left it with a single path. And
-inserting above a branch path carried the path's label but dropped its condition, silently turning a
-configured path into the fallback.
-**Revised** this reverses the original model, in which any node could fan out and `03` listed
-"parallel paths" as a property of the canvas rather than a node.
+**Why** letting any node fan out produces a shape that carries no meaning. Two children under an
+Email node might be a deliberate fan-out or a mis-click, and the diagram cannot tell you which.
+Naming the two containers makes the tree self-describing. A node with two children below it always
+states whether it meant *one of these* or *all of these*.
+It also fixes a defect. Inserting a step into a linear chain used to append it as a sibling. Asking
+for *A → new → B* gave *A → (B, new)*, with no way to say "in the middle".
+Restricting fan-out to Branch alone was rejected, because it deletes a capability rather than
+relocating it. Five workflows send to the family *and* the school, and a branch means the applicant
+takes one path, not both.
+**Trade-off** one more node type to learn, and a two-step edit instead of one. Adding a parallel
+step means adding a Parallel and then filling its paths. That is the cost of the shape meaning
+something.

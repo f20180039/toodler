@@ -66,8 +66,8 @@ Three workflows were rewritten when the fee sequence arrived:
 - **Enrolment & allocation** is triggered by payment, not by acceptance.
 - **Term fee reminder** reads *Term fee status* instead of a generic payment status.
 
-Nine decisions in `06` carry a **Revised** line. Those record a change of mind rather than hiding
-it, and they are the most useful entries to read.
+`06` records each decision as it now stands. Where a call was later reversed, the entry states the
+current one rather than the history behind it.
 
 ## Out of scope, throughout
 
