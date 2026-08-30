@@ -1,97 +1,157 @@
 # 05 · Competitor research
 
-**Answers:** what the established builders actually support, and which of it we should provide.
+**Answers:** what the established builders support, and which of it we should provide.
 **Read after:** `04-node-configuration.md`.
 
-Products reviewed: **HubSpot** workflows, **ActiveCampaign** automations, **Mailchimp** automation
-flows (Customer Journey Builder), and admissions-specific CRMs (**Meritto / NoPaperForms**,
-**Salesforce Education Cloud**). All claims were checked against vendor documentation in
-August 2026 (sources at the end). The admissions-CRM column is marketing-page detail, not product
-documentation, so it reads *typical* rather than verified. One caveat to carry into the interview:
-ActiveCampaign's help centre blocks automated access, so its rows come from indexed summaries of the
-linked pages rather than from the pages themselves — worth confirming in-app before quoting its
-numbers.
+Products reviewed:
 
-## Capability comparison
+- **HubSpot** workflows
+- **ActiveCampaign** automations
+- **Mailchimp** automation flows (Customer Journey Builder)
+- Admissions CRMs: **Meritto / NoPaperForms** and **Salesforce Education Cloud**
 
-| Capability | HubSpot | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle MVP** |
-|---|---|---|---|---|---|
-| Multiple entry triggers | Yes | Yes | Up to 3 (Standard+) | Typical | **No — one trigger** (→ D-02) |
-| Filters on the trigger | Yes | Yes (segment builder) | Up to 5 per trigger | Typical | **Yes** — grade and academic year |
-| Duration delay | Yes — "set amount of time" | Yes | Yes — "time delay" | Typical | **Yes** |
-| Wait until a date / date property | Yes — calendar date, date property | Yes — specific day/time, custom date field | Not a named rule | Typical | **Yes** |
-| Wait relative to a date ("24h before") | Via a date-property delay | Via date-based triggers and actions | — | Typical | **No** — expressed as a duration from the trigger (→ D-04) |
-| Wait until an event or condition | Yes — "event occurrence" | Yes — "wait until conditions are met", with a time limit | Yes — "Wait for Trigger" | Partial | **Yes**, with a maximum wait |
-| Weekday / time-of-day / weekend control | Yes — "Business days only (Monday - Friday)", day-of-week and time-of-day delays | Date and time conditions | — | — | **Yes — exclude weekends** (→ D-05) |
-| Binary Yes / No branch | Yes — if/then, with a "None met" path | Yes — If/Else, Yes and No paths | Yes — conditional split, up to 5 conditions | Typical | **Yes** |
-| AND / OR inside one branch | Yes — if/then, up to 20 branches | Yes — segment builder | Multiple conditions per split | Typical | **No** — one field per branch, one condition per path |
-| N-way / value-based split | Yes — up to 250 branches on one property | Via nested If/Else | No | Partial | **Yes** — two or more paths, each with its own condition (→ D-03) |
-| Numeric comparison in a condition | Yes | Yes | No | Varies | **Yes** — `more than` / `less than`, on the overdue day counts only (→ D-33) |
-| Random / percentage split | Yes — Marketing Hub Pro+, needs ≈1,000 records | Yes | Yes — percentage and 50/50 | Rare | **Not doing** — cohorts are too small to mean anything (→ D-06) |
-| Create an internal task | Yes — "Create task" | Yes — "Add a deal task" | No | Yes — counsellor follow-ups | **Yes** |
-| Internal notification | Yes — in-app, internal email, Slack | Partial | No | Typical | **Yes** |
-| Update a record field | Yes — "Edit record" | Yes | Yes — "Update contact" | Typical | **Yes** — update status, and allocate house / section |
-| Re-entry / re-enrolment control | Yes — off by default | Yes | Yes | Typical | **Yes** — once only, once per year, or every time (→ D-14) |
-| Draft / Active / Paused states | Yes | Yes | Yes — Draft, Active, Paused | Typical | **Yes** — three states, with a review before activation (→ D-10) |
-| SMS / WhatsApp | Yes / partial | Yes | SMS, with an approved programme | Yes — the primary channel in India | **Deferred** (→ D-16) |
-| Webhook / custom code | Yes | Yes | Yes | Varies | **Not doing** (→ D-16) |
-| Parallel steps from one node | Yes | Yes | Yes | Typical | **Yes** — drawn side by side |
-| Delivery retry on a message | Partial | Partial | — | Varies | **Yes** — attempts and interval (→ D-21) |
-| House / class allocation | No | No | No | Yes | **Yes** — balanced or sibling-matched (→ D-18) |
-| Waitlist backfill on a released seat | No | No | No | Yes — core to seat management | **Yes** — event-driven, deadline-guarded (→ D-28) |
-| Provisional hold before registration | No | No | No | Typical | **Yes** — register on payment (→ D-27) |
-| Token / deposit credited against a later bill | No | No | No | Varies — some handle it as an advance | **Yes** — credit adjustment on the same node (→ D-34, D-37) |
-| Refund on withdrawal | No | No | No | Typical | **Yes** — token retained, balance refunded as a finance task (→ D-38) |
-| Fee types tracked separately | No — no notion of a fee | No | No | Yes — registration, admission and term fees are distinct | **Yes** — four named fee statuses (→ D-31) |
-| Payment failed vs unpaid | Not applicable | Not applicable | Not applicable | Varies | **Yes** — separate status and trigger (→ D-32) |
-| Fee position configurable in the journey | Not applicable | Not applicable | Not applicable | Varies by product | **Yes** — the trigger is the configuration (→ D-30) |
-| Fee concession / discount | No — no notion of a fee | No | No | Yes — scholarships and staff concessions are standard | **Yes** — category, fee head, % or amount, approval gate (→ D-25) |
-| Linkable diagram (URL state) | Yes | Yes | Yes | Varies | **Yes** — `?flow=…&step=…` (→ D-22) |
+All claims were checked against vendor documentation in August 2026. Sources are at the end.
 
-Five observations drove scope more than the feature counts:
+Two caveats to carry into the interview. The admissions-CRM column comes from marketing pages rather
+than product documentation, so it reads *typical* rather than verified. And ActiveCampaign's help
+centre blocks automated access, so its rows come from indexed summaries rather than the pages
+themselves. Worth confirming in-app before quoting its numbers.
 
-0. **"Registration fee" means two different things in this market.** GIIS Bangalore takes it *while
-   submitting the admission form*, before any decision; St Pauls College takes it *after the offer is
-   accepted*, and issues the admission letter on payment confirmation. Two schools, one term, two
-   milestones — which is why the product treats a fee as a workflow hung off a trigger rather than as
-   a step in a fixed sequence (→ D-30).
-1. **None of the generic tools know what a fee is.** HubSpot, ActiveCampaign and Mailchimp can send a
-   payment reminder but have no concept of a fee head, a concession or an approval on money — so a
-   school running merit-cum-need aid through them keeps that in a spreadsheet regardless. The
-   admissions CRMs do handle it, which is the clearest signal that it belongs in the product rather
-   than in the "nice to have" pile.
-2. **The generic tools are property-driven.** A school adopting HubSpot must first model applicants,
-   grades and document status as custom contact properties. That modelling work is the gap we
-   close by shipping `01`'s vocabulary as first-class fields (→ D-12).
-3. **Delay sophistication, not branching sophistication, is where admissions lives.** HubSpot ships
-   six delay types; we need five of the same ideas. Its branching goes to 250 paths; the widest
-   branch we need is four.
-4. **The admissions CRMs already do the work half** — counsellor assignment, document verification,
-   interview panel allocation, fee follow-up. That is the shape of the deferred list in `03`, and it
-   confirms tasks and notifications belong in the MVP.
+## Triggers and entry
+
+| Capability              | HubSpot | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle**           |
+| ----------------------- | ------- | -------------- | --------- | --------------- | -------------------- |
+| Multiple entry triggers | Yes     | Yes            | Up to 3   | Typical         | **No, one** (→ D-02) |
+| Filters on the trigger  | Yes     | Yes            | Up to 5   | Typical         | **Yes**              |
+| Re-entry control        | Yes     | Yes            | Yes       | Typical         | **Yes** (→ D-14)     |
+
+We take one trigger per workflow. All fifteen have exactly one entry event, and multi-trigger raises
+dedupe questions that belong to an execution engine we are not building.
+
+Re-entry offers once only, once per academic year, or every time.
+
+## Waiting
+
+| Capability                    | HubSpot             | ActiveCampaign      | Mailchimp | Admissions CRMs | **Toddle**                 |
+| ----------------------------- | ------------------- | ------------------- | --------- | --------------- | -------------------------- |
+| Duration delay                | Yes                 | Yes                 | Yes       | Typical         | **Yes**                    |
+| Wait until a date             | Yes                 | Yes                 | Not named | Typical         | **Yes**                    |
+| Wait until an event           | Yes                 | Yes, with a limit   | Yes       | Partial         | **Yes**, with a limit      |
+| Wait relative to a date       | Via a date property | Via date conditions | —         | Typical         | **No** (→ D-04)            |
+| Weekend / time-of-day control | Yes                 | Yes                 | —         | —               | **Weekends only** (→ D-05) |
+
+HubSpot's "Business days only (Monday - Friday)" option exists for the same reason ours does. Waiting
+*relative* to a date field is the clearest gap: we express "24 hours before the interview" as a
+24-hour duration from the booking, which breaks for a slot booked months ahead.
+
+## Logic
+
+| Capability                   | HubSpot   | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle**                       |
+| ---------------------------- | --------- | -------------- | --------- | --------------- | -------------------------------- |
+| Binary Yes / No branch       | Yes       | Yes            | Yes       | Typical         | **Yes**                          |
+| N-way split on one field     | Up to 250 | Via nesting    | No        | Partial         | **Yes** (→ D-03)                 |
+| AND / OR inside one branch   | Up to 20  | Yes            | Yes       | Typical         | **No**                           |
+| Numeric comparison           | Yes       | Yes            | No        | Varies          | **Overdue counts only** (→ D-33) |
+| Parallel steps from one node | Yes       | Yes            | Yes       | Typical         | **Yes**                          |
+| Random / percentage split    | Yes       | Yes            | Yes       | Rare            | **Not doing** (→ D-06)           |
+
+HubSpot's percentage split needs roughly a thousand records to distribute evenly. A grade intake is
+tens to low hundreds, so a split test here measures noise (→ D-06).
+
+## Actions
+
+| Capability                  | HubSpot       | ActiveCampaign | Mailchimp | Admissions CRMs              | **Toddle**             |
+| --------------------------- | ------------- | -------------- | --------- | ---------------------------- | ---------------------- |
+| Create an internal task     | Yes           | Yes            | No        | Yes                          | **Yes**                |
+| Internal notification       | Yes           | Partial        | No        | Typical                      | **Yes**                |
+| Update a record field       | Yes           | Yes            | Yes       | Typical                      | **Yes**                |
+| Delivery retry on a message | Partial       | Partial        | —         | Varies                       | **Yes** (→ D-21)       |
+| SMS / WhatsApp              | Yes / partial | Yes            | SMS       | The primary channel in India | **Deferred** (→ D-16)  |
+| Webhook / custom code       | Yes           | Yes            | Yes       | Varies                       | **Not doing** (→ D-16) |
+
+## Where admissions differs
+
+This is the interesting table. The generic tools score No on almost every row, and the admissions
+CRMs score Yes.
+
+| Capability                           | HubSpot | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle**                     |
+| ------------------------------------ | ------- | -------------- | --------- | --------------- | ------------------------------ |
+| House / class allocation             | No      | No             | No        | Yes             | **Yes** (→ D-18)               |
+| Fee types tracked separately         | No      | No             | No        | Yes             | **Four statuses** (→ D-31)     |
+| Fee concession / discount            | No      | No             | No        | Yes             | **Yes** (→ D-25)               |
+| Fee position configurable            | n/a     | n/a            | n/a       | Varies          | **The trigger is it** (→ D-30) |
+| Payment failed vs unpaid             | n/a     | n/a            | n/a       | Varies          | **Separate** (→ D-32)          |
+| Token credited against a bill        | No      | No             | No        | Sometimes       | **Yes** (→ D-34, D-37)         |
+| Provisional hold before registration | No      | No             | No        | Typical         | **Yes** (→ D-27)               |
+| Waitlist backfill on a released seat | No      | No             | No        | Core to it      | **Yes** (→ D-28)               |
+| Refund on withdrawal                 | No      | No             | No        | Typical         | **As a task** (→ D-38)         |
+
+## Product-level features
+
+| Capability                   | HubSpot | ActiveCampaign | Mailchimp | Admissions CRMs | **Toddle**       |
+| ---------------------------- | ------- | -------------- | --------- | --------------- | ---------------- |
+| Draft / Active / Paused      | Yes     | Yes            | Yes       | Typical         | **Yes** (→ D-10) |
+| Linkable diagram (URL state) | Yes     | Yes            | Yes       | Varies          | **Yes** (→ D-22) |
+
+## Five observations that drove scope
+
+**1. "Registration fee" means two different things in this market.** GIIS Bangalore takes it while
+submitting the admission form, before any decision. St Pauls College takes it after the offer is
+accepted, and issues the admission letter on payment confirmation. Two schools, one term, two
+milestones. That is why we treat a fee as a workflow hung off a trigger rather than a step in a fixed
+sequence (→ D-30).
+
+**2. None of the generic tools know what a fee is.** HubSpot, ActiveCampaign and Mailchimp can send a
+payment reminder, but they have no concept of a fee head, a concession, or an approval on money. A
+school running merit-cum-need aid through them keeps it in a spreadsheet anyway. The admissions CRMs
+do handle it, which is the clearest signal that it belongs in the product.
+
+**3. The generic tools are property-driven.** A school adopting HubSpot must first model applicants,
+grades and document status as custom contact properties. That modelling work is the gap we close by
+shipping `01`'s vocabulary as first-class fields (→ D-12).
+
+**4. Delay sophistication is where admissions lives, not branching sophistication.** HubSpot ships
+six delay types and we need five of the same ideas. Its branching goes to 250 paths; the widest
+branch we need is four.
+
+**5. The admissions CRMs already do the work half.** Counsellor assignment, document verification,
+interview panel allocation, fee follow-up. That is the shape of the deferred list in `03`, and it
+confirms that tasks and notifications belong in the MVP.
 
 ## Functionality we should provide
 
-**MVP — built.** One filtered trigger from fifteen admissions events, with a re-entry rule · send
-email to a recipient *role*, with delivery retry · create task · notify team · update status ·
-allocate house and class section · adjust a fee, as a concession or as a credit, with an approval
-gate · a branch with two or more labelled paths, an explicit fallback, and numeric comparison on the
-overdue day counts · three delay types with weekend exclusion · parallel steps drawn side by side ·
-configuration summaries on every node · advisory validation, enforced at activation · Draft / Active
-/ Paused with a review before anything goes live · undo and redo · linkable diagrams · fifteen
-workflows across the journey stages plus inter-branch transfer (see `README.md`).
+### Built
 
-**Next — designed for, not built.** WhatsApp and SMS, the channel parents actually reply on · a
-template library so a school never starts from a blank canvas · academic-calendar awareness on
-delays, so vacations are excluded the way weekends are · waiting relative to a date field (→ D-04) ·
-a workflow *list*, which is where lifecycle normally lives and where "which of my fifteen are live?"
-gets answered (→ D-10, D-24) · per-workflow analytics on the canvas.
+- One filtered trigger, from fifteen admissions events, with a re-entry rule
+- Send email to a *role*, with delivery retry
+- Create task, notify team, update status
+- Allocate a house or class section
+- Adjust a fee, as a concession or a credit, with an approval gate
+- Branch with two or more labelled paths, an explicit fallback, and numeric comparison
+- Parallel, for steps that all run
+- Three delay types, with weekend exclusion
+- A configuration summary printed on every node
+- Advisory validation, enforced at activation
+- Draft / Active / Paused, with a review before anything goes live
+- Undo and redo, and linkable diagrams
+- Fifteen workflows across the journey, plus inter-branch transfer
 
-**Explicitly not doing.** Random / A/B split as an admissions feature — cohorts are too small for it
-to mean anything (→ D-06) · webhooks and custom code, wrong audience for a school administrator ·
-AND / OR across several fields in one branch, until a workflow needs it · multi-trigger workflows
-until the execution semantics are settled (→ D-02) · any part of the execution engine, which the
-brief places out of scope (→ D-16).
+### Next
+
+- WhatsApp and SMS, the channel parents actually reply on
+- A template library, so a school never starts from a blank canvas
+- Academic-calendar awareness on delays, so vacations are excluded like weekends
+- Waiting relative to a date field (→ D-04)
+- A workflow list, which is where lifecycle normally lives (→ D-10, D-24)
+- Per-workflow analytics on the canvas
+
+### Explicitly not doing
+
+- Random / A/B split. Cohorts are too small for it to mean anything (→ D-06)
+- Webhooks and custom code. Wrong audience for a school administrator
+- AND / OR across several fields in one branch, until a workflow needs it
+- Multi-trigger workflows, until the execution semantics are settled (→ D-02)
+- Any part of the execution engine, which the brief places out of scope (→ D-16)
 
 ## Sources
 
@@ -111,14 +171,15 @@ brief places out of scope (→ D-16).
 [Use wait for trigger rules](https://mailchimp.com/help/use-wait-for-trigger-rules/) ·
 [Use percentage split rules](https://mailchimp.com/help/use-percentage-split-rules/)
 
-**School admission processes — where the fee actually sits** ·
+**School admission processes, and where the fee actually sits** ·
 [GIIS Bangalore admissions process](https://globalindianschool.org/bangalore/admissions/admissions-process/)
-and [fees](https://globalindianschool.org/bangalore/admissions/fees/) — registration fee at form
-submission, admission and term fees after confirmation ·
-[St Pauls College Bengaluru admissions](https://landingblr.stpaulscollege.edu.in/admission/) —
-offer letter, accept, Registration Fee Payment, then enrolment on payment confirmation.
-*(The GIIS page blocks automated fetching; its fee timing was confirmed through its indexed fees
-page rather than read directly.)*
+and [fees](https://globalindianschool.org/bangalore/admissions/fees/), showing the registration fee
+at form submission and admission and term fees after confirmation ·
+[St Pauls College Bengaluru admissions](https://landingblr.stpaulscollege.edu.in/admission/),
+showing offer letter, accept, Registration Fee Payment, then enrolment on payment confirmation.
+
+*The GIIS page blocks automated fetching. Its fee timing was confirmed through the indexed fees page
+rather than read directly.*
 
 **Admissions-specific** · [Meritto education CRM for admissions teams](https://www.meritto.com/education-crm-for-admission-management-teams/) ·
 [Salesforce Education Cloud](https://www.salesforce.com/education/cloud/) ·
